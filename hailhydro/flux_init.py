@@ -3,7 +3,7 @@
 # @Email:  kramer@mpi-cbg.de
 # @Project: go-with-the-flow
 # @Last modified by:    Felix Kramer
-# @Last modified time: 2021-06-12T20:11:05+02:00
+# @Last modified time: 2021-06-13T00:42:14+02:00
 # @License: MIT
 
 import networkx as nx
@@ -15,6 +15,7 @@ from flow_random import *
 class flux(flow, object):
 
     def __init__(self,*args):
+
         super(flux,self).__init__(args[0])
 
         # incidence correlation
@@ -30,6 +31,7 @@ class flux(flow, object):
 
     def initialize(self, K):
 
+        self.ref_var=self.circuit.scale['diffusion']/self.circuit.scale['length']
         self.N=len(self.circuit.list_graph_nodes)
         self.M=len(self.circuit.list_graph_edges)
         self.circuit.nodes['concentration']=np.zeros(self.N)
@@ -73,10 +75,9 @@ class flux(flow, object):
 
         return R_sq
 
-    def calc_diff_flux(self,*args):
+    def calc_diff_flux(self,R_sq):
 
-        R_sq,ref_var=args
-        A=np.pi*R_sq*ref_var
+        A=np.pi*R_sq*self.ref_var
 
         return A
 
@@ -87,19 +88,8 @@ class flux(flow, object):
 
         return V
 
-    def calc_peclet(self,*args):
+    def calc_peclet(self,V):
 
-        V,ref_var=args
-        PE=V*ref_vars
+        PE=V/self.ref_vars
 
         return PE
-
-# class simple_flux_uptake_network(flux_network,object):
-#
-#     def __init__(self):
-#         super(simple_flux_uptake_network,self).__init__()
-#         self.alpha=0.
-#         self.gamma=0.
-#
-#
-#
