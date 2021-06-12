@@ -3,7 +3,7 @@
 # @Email:  kramer@mpi-cbg.de
 # @Project: go-with-the-flow
 # @Last modified by:    Felix Kramer
-# @Last modified time: 2021-06-03T18:11:15+02:00
+# @Last modified time: 2021-06-12T14:45:23+02:00
 # @License: MIT
 
 import numpy as np
@@ -222,28 +222,23 @@ class flow_reroute(flow,object):
 
     def calc_random_radii(self,*args):
 
-        idx,conduct=args
-        C_broken_ensemble=[self.break_links(i,conduct) for i in idx]
+        graph_matrices=self.get_broken_links_asarray(*args)
+
         R,R_sq,R_cb=[],[],[]
-        for i in range(self.num_iteration):
+        for gm in graph_matrices:
 
-            kernel=C_broken_ensemble[i]/self.circuit.scales['conductance']
+            kernel=gm/self.circuit.scales['conductance']
 
-            R.append(np.power(C_broken_ensemble[i]/self.circuit.scales['conductance'],0.25))
-            R_sq.append(np.sqrt(C_broken_ensemble[i]/self.circuit.scales['conductance']))
-            R_cb.append(np.power(C_broken_ensemble[i]/self.circuit.scales['conductance'],0.75))
-        # R=[np.power(C_broken_ensemble[i]/self.circuit.scales['conductance'],0.25)  for i in range(self.num_iteration)]
-        # R_sq=[np.sqrt(C_broken_ensemble[i]/K.circuit.scales['conductance'])  for i in range(self.num_iteration)]
-        # R_cb=[np.power(C_broken_ensemble[i]/K.circuit.scales['conductance'],0.75)  for i in range(self.num_iteration)]
+            R.append(np.power(kernel,0.25))
+            R_sq.append(np.sqrt(kernel))
+            R_cb.append(np.power(kernel,0.75))
 
         return [R,R_sq, R_cb]
 
     def calc_sq_flow(self,*args):
 
-        idx,conduct=args
         # block p percent of the edges per realization
-        C_broken_ensemble=[self.break_links(i,conduct) for i in idx]
-        graph_matrices=[[C_broken_ensemble[i]] for i in range(self.num_iteration)]
+        graph_matrices=self.get_broken_links_asarray(*args)
         flow_observables=list(map(self.calc_flows_mapping,graph_matrices))
 
         # calc ensemble averages
@@ -254,7 +249,7 @@ class flow_reroute(flow,object):
 
     def calc_flows_mapping(self,graph_matrices):
 
-        C_aux=graph_matrices[0]
+        C_aux=graph_matrices
 
         dP, P=self.calc_pressure(C_aux,self.circuit.nodes['source'])
         Q=self.calc_flow_from_pressure(C_aux,dP)
@@ -274,3 +269,11 @@ class flow_reroute(flow,object):
         avg_F_sq= np.mean(q_sq,axis=0)
 
         return [avg_dP_sq,avg_F_sq,avg_R,avg_diss]
+
+    def get_broken_links_asarray(self, *args):
+
+        idx,conduct=args
+
+        graph_matrices=[self.break_links(i,conduct) for i in idx]
+
+        return graph_matrices

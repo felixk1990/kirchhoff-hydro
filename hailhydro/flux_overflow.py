@@ -3,7 +3,7 @@
 # @Email:  kramer@mpi-cbg.de
 # @Project: go-with-the-flow
 # @Last modified by:    Felix Kramer
-# @Last modified time: 2021-06-03T18:25:16+02:00
+# @Last modified time: 2021-06-12T20:36:10+02:00
 # @License: MIT
 
 
@@ -21,38 +21,18 @@ class overflow(flux,object):
         super(overflow,self).__init__(args[0])
         self.crit_pe=50.
 
+    def update_transport_matrix(self):
 
-    def initialize_broken_link(self, K):
+        ref_var=self.circuit.scale['diffusion']/self.circuit.scale['length']
+        R_sq= self.calc_cross_section_from_conductivity(self.circuit.edge['conductivity'],self.circuit.scale['conductance'])
+        A=self.calc_diff_flux( R_sq,ref_var )
 
-        self.initialize(K)
+        Q=self.calc_flow(self.circuit.edge['conductivity'],self.circuit.node['source'])
+        V=self.calc_velocity_from_flowrate(Q,R_sq)
+        self.circuit.edge['peclet']=self.calc_peclet(V,1./ref_var)
+        self.circuit.edge['flow_rate']=Q
 
-        # x=int(K.percentage_broken*nx.number_of_edges(K.G))
-        broken_sets=[]
-        num_sets=50000
-        K.AUX=nx.Graph(K.G)
-        for i in range(num_sets):
-            # cond,idx=self.generate_coherent_closure(K.AUX,x)
-            cond,idx=self.generate_coherent_closure(K)
-            if cond:
-                broken_sets.append(idx)
-
-        K.broken_sets=broken_sets
-        print(len(K.broken_sets))
-        if len(K.broken_sets)==0:
-            sys.exit('nothing broken here... srsly check initialize_broken_link() though')
-        # shear_sq,dV_sq, F_sq, avg_phi = self.calc_sq_flow_broken_link(K)
-        # shear_sq,dV_sq, F_sq = self.calc_sq_flow_broken_link(K)
-        diss,dV_sq,F_sq,R = self.calc_sq_flow_broken_link(K)
-        K.dV_sq=dV_sq[:]
-        K.F=np.zeros(len(K.R))
-
-    def update_stationary_operator(self,K):
-
-        Q,dP,P=self.calc_flows_pressures(K)
-        K.PE=self.calc_PE(K)
-
-        A=np.pi*np.power(K.R,2)*(K.D/K.l)
-        x,z,e_up_sinh_x,e_down_sinh_x,coth_x,idx_pack=self.compute_flux_pars(K)
+        x,z,e_up_sinh_x,e_down_sinh_x,coth_x,idx_pack=self.compute_flux_pars()
 
         f1= np.multiply(z,A)
         f2= np.multiply(A,np.multiply(x,coth_x))*0.5
@@ -62,167 +42,33 @@ class overflow(flux,object):
 
         self.B_eff=np.zeros((self.N,self.N))
 
-        for i,n in enumerate(K.G.nodes()):
-            self.B_eff[i,i]= np.sum(  np.add( np.multiply(K.B[i,:],f1),np.multiply(np.absolute(K.B[i,:]),f2))  )
+        for i,n in enumerate(self.circuit.list_graph_nodes):
+
+            self.B_eff[i,i]= np.sum(  np.add( np.multiply(self.B[i,:],f1),np.multiply(np.absolute(self.B[i,:]),f2))  )
             self.B_eff[i,self.dict_in[n]]= -f3[self.dict_node_in[n]]
             self.B_eff[i,self.dict_out[n]]= -f4[self.dict_node_out[n]]
 
-    def update_stationary_operator_noise(self,K,R,flow_observables):
-
-        K.Q=flow_observables[0]
-        R_sq=np.power(R,2)
-        V=np.divide(K.Q,R_sq*np.pi)
-        K.PE=np.multiply(V,K.l/K.D)
-
-        A=np.pi*R_sq*(K.D/K.l)
-        x,z,e_up_sinh_x,e_down_sinh_x,coth_x,idx_pack = self.compute_flux_pars(K)
-
-        f1= np.multiply(z,A)
-        f2= np.multiply(A,np.multiply(x,coth_x))*0.5
-
-        f3= np.multiply(np.multiply(A,x),e_up_sinh_x)*0.5
-        f4= np.multiply(np.multiply(A,x),e_down_sinh_x)*0.5
-
-        self.B_eff=np.zeros((self.N,self.N))
-
-        for i,n in enumerate(K.G.nodes()):
-            self.B_eff[i,i]= np.sum(  np.add( np.multiply(K.B[i,:],f1),np.multiply(np.absolute(K.B[i,:]),f2))  )
-            self.B_eff[i,self.dict_in[n]]= -f3[self.dict_node_in[n]]
-            self.B_eff[i,self.dict_out[n]]= -f4[self.dict_node_out[n]]
-
-    def generate_coherent_closure_deterministic(self,H,x):
-
-        idx=rd.sample(range(len(self.list_e)),x)
-        for e in idx:
-            H.remove_edge(*self.list_e[e])
-        cond=nx.is_connected(H)
-
-        for e in idx:
-            H.add_edge(*self.list_e[e])
-
-        return cond,idx
-
-    def generate_coherent_closure(self,K):
-
-        prob=np.random.sample(self.M)
-        idx=np.where(   prob <= K.percentage_broken )[0]
-
-        for e in idx:
-            K.AUX.remove_edge(*self.list_e[e])
-        cond=nx.is_connected(K.AUX)
-
-        for e in idx:
-            K.AUX.add_edge(*self.list_e[e])
-
-        return cond,idx
-
-    def break_link(self,K,idx):
-
-        C_aux=np.array(K.C[:])
-        C_aux[idx]=np.power(10.,-20)
-
-        return C_aux
-
-    def calc_sq_flow_broken_link(self,K):
-
-        # block p percent of the edges per realization
-
-        idx=rd.choices(K.broken_sets,k=K.num_iteration)
-        C_broken_ensemble=[self.break_link(K,i) for i in idx]
-        graph_matrices=[[C_broken_ensemble[i],K] for i in range(K.num_iteration)]
-
-        # calc the flow landscapes for each realization
-        # pool = mp.Pool(processes=4)
-        # with mp.Pool(processes=4) as pool:
-        #     flow_observables=list(pool.map(self.calc_flows_pressures_noise,graph_matrices))
-
-        flow_observables=list(map(self.calc_flows_pressures_noise,graph_matrices))
-
-        # calc ensemble averages
-        F_sq=np.power([fo[0] for fo in flow_observables],2)
-        dV_sq=np.power([fo[2] for fo in flow_observables],2)
-        R_sq=[np.sqrt(C_broken_ensemble[i]/K.k)  for i in range(K.num_iteration)]
-        R_cb=[np.power(C_broken_ensemble[i]/K.k,0.75)  for i in range(K.num_iteration)]
-        R=[np.power(C_broken_ensemble[i]/K.k,0.25)  for i in range(K.num_iteration)]
-        # PHI=list(map( self.calc_absorption_noise , graph_matrices, flow_observables ) )
-        # PHI=[ self.calc_absorption_noise(K,fo) for  fo in flow_observables  ]
-
-        # avg_shear_sq=np.sum(np.multiply(dV_sq,R_sq),axis=0)/float(K.num_iteration)
-        avg_diss=np.sum(np.multiply(dV_sq,R_cb),axis=0)/float(K.num_iteration)
-        avg_R=np.mean(R,axis=0)
-        avg_dV_sq=np.mean(dV_sq,axis=0)
-        avg_F_sq= np.mean(F_sq,axis=0)
-        # avg_PHI= np.mean(PHI,axis=0)
-
-        # return avg_shear_sq,avg_dV_sq,avg_F_sq,avg_PHI
-        # return avg_shear_sq,avg_dV_sq,avg_F_sq
-        return avg_diss,avg_dV_sq,avg_F_sq,avg_R
-
-    def calc_sq_flow_noise(self,K):
-
-        # block p percent of the edges per realization
-
-        idx=rd.choices(K.broken_sets,k=K.num_iteration)
-        C_broken_ensemble=[self.break_link(K,i) for i in idx]
-        graph_matrices=[[C_broken_ensemble[i],K] for i in range(K.num_iteration)]
-
-        # calc the flow landscapes for each realization
-        # pool = mp.Pool(processes=4)
-        # with mp.Pool(processes=4) as pool:
-        #     flow_observables=list(pool.map(self.calc_flows_pressures_noise,graph_matrices))
-
-        flow_observables=list(map(self.calc_flows_pressures_noise,graph_matrices))
-
-        # calc ensemble averages
-        F_sq=np.power([fo[0] for fo in flow_observables],2)
-        dV_sq=np.power([fo[2] for fo in flow_observables],2)
-        R_sq=[np.sqrt(C_broken_ensemble[i]/K.k)  for i in range(K.num_iteration)]
-        PHI=list(map( self.calc_absorption_noise , graph_matrices, flow_observables ) )
-        # PHI=[ self.calc_absorption_noise(K,fo) for  fo in flow_observables  ]
-
-        avg_shear_sq=np.sum(np.multiply(dV_sq,R_sq),axis=0)/float(K.num_iteration)
-        avg_dV_sq=np.mean(dV_sq,axis=0)
-        avg_F_sq= np.mean(F_sq,axis=0)
-        avg_PHI= np.mean(PHI,axis=0)
-
-        return avg_shear_sq,avg_dV_sq,avg_F_sq,avg_PHI
-        # return avg_shear_sq,avg_dV_sq,avg_F_sq
-
-    def calc_absorption_noise(self, graph_matrices, flow_observables):
-
-        C_aux,K=graph_matrices
-        R=np.power(C_aux/K.k,0.25)
-        self.update_stationary_operator_noise(K, R ,flow_observables)
-
-        # use absorbing boundaries + reduced equation system
-        if self.mode_boundary=='absorbing_boundary':
-            c,B_new,K=self.solve_absorbing_boundary(K)
-
-        # use inlet delta peak + reduced equation system
-        elif self.mode_boundary=='mixed_boundary':
-            c,B_new,K=self.solve_inlet_peak(K)
-
-        return self.calc_absorption(R, K)
-
-    def calc_absorption(self,R, K):
+    def calc_absorption(self,R_sq):
 
         # set containers
         c_a,c_b=np.ones(self.M),np.ones(self.M)
         # calc coefficients
-        for j,e in enumerate(self.list_e):
+        for j,e in enumerate(self.circuit.list_graph_edges):
             a,b=self.dict_edges[e]
-            c_a[j]=K.G.nodes[a]['concentrations']
-            c_b[j]=K.G.nodes[b]['concentrations']
+            c_a[j]=self.circuit.G.nodes[a]['concentrations']
+            c_b[j]=self.circuit.G.nodes[b]['concentrations']
 
-        x,z,e_up_sinh_x,e_down_sinh_x,coth_x,idx_pack=self.compute_flux_pars(K)
+        x,z,e_up_sinh_x,e_down_sinh_x,coth_x,idx_pack=self.compute_flux_pars()
 
         f1_up= np.multiply(x,e_up_sinh_x)*0.5
         f1_down= np.multiply(x,e_down_sinh_x)*0.5
         F1=np.add( np.subtract( np.multiply(x,coth_x)*0.5 , f1_up), z)
         F2=np.add( np.subtract( np.multiply(x,coth_x)*0.5 , f1_down), -z)
+
         # calc edgewise absorption
         phi=np.add(np.multiply(c_a,F1) ,np.multiply( c_b,F2 ))
-        A=np.pi*np.multiply(R,R)*(K.D/K.l)
+        ref_var=self.circuit.scale['diffusion']/self.circuit.scale['length']
+        A=self.calc_diff_flux( R_sq,ref_var )
 
         return np.multiply( A, phi )
 
@@ -232,8 +78,11 @@ class overflow(flux,object):
         J_PE,c,K=args
         dict_coeff={}
 
-        A=np.pi*np.multiply(R,R)*(K.D/K.l)
-        x,z,e_up_sinh_x,e_down_sinh_x,coth_x,idx_pack=self.compute_flux_pars(K)
+        ref_var=self.circuit.scale['diffusion']/self.circuit.scale['length']
+        R_sq=np.multiply(R,R)
+        A=self.calc_diff_flux( R_sq,ref_var )
+
+        x,z,e_up_sinh_x,e_down_sinh_x,coth_x,idx_pack=self.compute_flux_pars()
 
         f1= np.multiply(z,A)
         f2= np.multiply(np.multiply(x,coth_x),A)*0.5
@@ -243,11 +92,7 @@ class overflow(flux,object):
 
         j_coth_x=np.zeros(self.M)
         idx_lower=idx_pack[0]
-
-        # subcritical
         j_coth_x[idx_lower]=np.power(np.divide(coth_x[idx_lower],np.cosh(x[idx_lower])),2)
-        # overcritical
-        # j_coth_x[idx_over]=0.
 
         f2= np.multiply(x,coth_x)*0.5
         f4=np.subtract( np.multiply( np.divide(z,x), coth_x) ,  np.multiply( z,j_coth_x )*0.5 )
@@ -264,8 +109,8 @@ class overflow(flux,object):
         dict_coeff['J_f_up']=J_f_up
         dict_coeff['J_f_down']=J_f_down
 
-        flux_sum_1=np.array([ np.add( np.multiply(K.B[i,:],z), np.multiply(np.absolute(K.B[i,:]),f2)) for i,n in enumerate(self.list_n)])
-        flux_sum_2=np.array([ np.multiply(A, np.add( K.B[i,:]*0.5, np.multiply(np.absolute(K.B[i,:]),f4) ) ) for i,n in enumerate(self.list_n)])
+        flux_sum_1=np.array([ np.add( np.multiply(self.B[i,:],z), np.multiply(np.absolute(self.B[i,:]),f2)) for i,n in enumerate(self.circuit.list_graph_nodes)])
+        flux_sum_2=np.array([ np.multiply(A, np.add( self.B[i,:]*0.5, np.multiply(np.absolute(self.B[i,:]),f4) ) ) for i,n in enumerate(self.circuit.list_graph_nodes)])
         dict_coeff['flux_sum_1']=flux_sum_1
         dict_coeff['flux_sum_2']=flux_sum_2
 
@@ -287,54 +132,36 @@ class overflow(flux,object):
 
             JB_eff[i,self.dict_in[n]]=  np.subtract( np.multiply( J_PE_j[self.dict_node_in[n]] , dict_coeff['J_f_up'][self.dict_node_in[n]] ) , np.multiply( J_A[self.dict_node_in[n]], dict_coeff['f_up'][self.dict_node_in[n]] ))
 
-    def calc_inv_B(self, K ,c):
+    def calc_inv_B(self ,c):
 
-        # inlet peak
-        if self.mode_boundary=='mixed_boundary':
-
-            B_new=self.B_eff[self.idx_not_sinks,:]
-            B_new=B_new[:,self.idx_not_roots]
-            c=c[self.idx_not_sinks]
-
-        # absorbing boundary
-        elif self.mode_boundary=='absorbing_boundary':
-
-            B_new=self.B_eff[self.idx_eff,:]
-            B_new=B_new[:,self.idx_eff]
-            c=c[self.idx_eff]
-
+        B_new=self.B_eff[self.idx_eff,:]
+        B_new=B_new[:,self.idx_eff]
+        c=c[self.idx_eff]
         inv_B=np.linalg.inv(B_new)
 
         return inv_B, c
 
     def evaluate_jacobian(self,j,J_C,JB_eff,inv_B,c):
 
-        # absorbing boundary
-        if self.mode_boundary=='absorbing_boundary':
-
-            JB_new=JB_eff[self.idx_eff,:]
-            JB_new=JB_new[:,self.idx_eff]
-            J_C[j,self.idx_eff]=-np.dot(inv_B, np.dot( JB_new, c ))
-
-        # inlet peak
-        elif self.mode_boundary=='mixed_boundary':
-
-            JB_new=JB_eff[self.idx_not_sinks,:]
-            JB_new=JB_new[:,self.idx_not_roots]
-            J_C[j,self.idx_not_sinks]=-np.dot(inv_B, np.dot( JB_new, c ))
+        JB_new=JB_eff[self.idx_eff,:]
+        JB_new=JB_new[:,self.idx_eff]
+        J_C[j,self.idx_eff]=-np.dot(inv_B, np.dot( JB_new, c ))
 
     def calc_concentration_jacobian(self, R,*args ):
 
         # unzip
-        J_PE,c,K=args
+        J_PE,c=args
         # set coefficients
-        dict_coeff=self.calc_coefficients( R,J_PE,c,K )
-        inv_B, c = self.calc_inv_B(K ,c)
+        dict_coeff=self.calc_coefficients( R,J_PE,c )
+        inv_B, c = self.calc_inv_B(c)
 
+        ref_var=self.circuit.scale['diffusion']/self.circuit.scale['length']
         J_C=np.zeros((self.M,self.N))
-        J_diag=R*2.*np.pi*(K.D/K.l)
+        J_diag=R*2.*np.pi*ref_var
+
         J_A=np.zeros(self.M)
-        for j,e in enumerate(K.G.edges()):
+        for j,e in enumerate(self.circuit.list_graph_edges):
+
             J_A[j-1]=0.
             J_A[j]=J_diag[j]
             J_PE_j=J_PE[j,:]
@@ -350,23 +177,23 @@ class overflow(flux,object):
 
         # set containers
         ones=np.ones(self.M)
-        L=ones*K.l
         J_phi= np.zeros((self.M,self.M))
         phi=np.zeros(self.M)
         c_a,c_b,c_n=np.zeros(self.M),np.zeros(self.M),np.zeros(self.N)
         alphas,omegas=[],[]
+
         # calc coefficients
-        for j,e in enumerate(self.list_e):
+        for j,e in enumerate(self.circuit.list_graph_edges):
             a,b=self.dict_edges[e]
-            c_a[j]=K.G.nodes[a]['concentrations']
-            c_b[j]=K.G.nodes[b]['concentrations']
+            c_a[j]=self.circuit.G.nodes[a]['concentrations']
+            c_b[j]=self.circuit.G.nodes[b]['concentrations']
             alphas.append(a)
             omegas.append(b)
-        for i,n in enumerate(self.list_n):
+
+        for i,n in enumerate(self.circuit.list_graph_nodes):
             c_n[i]=K.G.nodes[n]['concentrations']
-        #
-        # PE=self.calc_PE(K)
-        x,z,e_up_sinh_x,e_down_sinh_x,coth_x,idx_pack=self.compute_flux_pars(K)
+
+        x,z,e_up_sinh_x,e_down_sinh_x,coth_x,idx_pack=self.compute_flux_pars()
 
         f1_up= 0.5*np.multiply(x,e_up_sinh_x)
         f1_down= 0.5*np.multiply(x,e_down_sinh_x)
@@ -375,12 +202,16 @@ class overflow(flux,object):
         F2=np.subtract( np.subtract( 0.5*np.multiply(x,coth_x) , f1_down ), z)
         F3,F4=self.calc_absorption_jacobian_coefficients(idx_pack, x,z,e_up_sinh_x,e_down_sinh_x,coth_x)
 
+        # calc current absorption
         phi=np.add( np.multiply(c_a,F1) ,np.multiply(c_b,F2 ) )
 
-        # calc jacobian
-        J_PE,J_Q= self.calc_flux_jacobian(R,L,K)
-        A=np.pi*np.multiply(R,R)*(K.D/K.l)
-        J_A=2.*np.pi*np.diag(R)*(K.D/K.l)
+        # calc jacobian components
+        ref_var=self.circuit.scale['diffusion']/self.circuit.scale['length']
+        R_sq=np.multiply(R,R)
+        A=self.calc_diff_flux( R_sq,ref_var )
+
+        J_PE,J_Q= self.calc_flux_jacobian(R)
+        J_A=2.*np.pi*np.diag(R)*ref_var
         J_C=self.calc_concentration_jacobian( R,J_PE,c_n,K )
 
         qa=np.multiply(A,c_a)
@@ -388,7 +219,7 @@ class overflow(flux,object):
         q1=np.multiply( A, F1 )
         q2=np.multiply( A, F2 )
 
-        for j,e in enumerate(self.list_e):
+        for j,e in enumerate(self.circuit.list_graph_edges):
 
             J_phi[j,:]=np.add(J_phi[j,:],np.multiply( J_A[j,:], phi))
 
@@ -421,7 +252,6 @@ class overflow(flux,object):
         F3[idx_lower]= 0.5*np.divide( np.add(f2_up, f3_up) , sinh_x)
         F4[idx_lower]= 0.5*np.divide( np.add(f2_down, f3_down) , sinh_x)
 
-
         # overcritical
         f2_up= np.multiply( np.divide(2.*z[idx_over],x[idx_over]), np.subtract( coth_x[idx_over], 2. ))
         f3_up=np.add( 2.* np.subtract( np.multiply(coth_x[idx_over],z[idx_over]), 0.5*x[idx_over] )  , 1.)
@@ -434,18 +264,19 @@ class overflow(flux,object):
 
         return F3,F4
 
-    def compute_flux_pars(self,K):
+    def compute_flux_pars(self):
 
-        x=np.sqrt( np.add( np.power(K.PE,2),K.beta ) )
-        z=K.PE*0.5
+        x=np.sqrt( np.add( np.power(self.circuit.edges['peclet'],2),self.circuit.edges['absorption'] ) )
+        z=self.circuit.edges['peclet']*0.5
 
         e_up_sinh_x=np.zeros(self.M)
         e_down_sinh_x=np.zeros(self.M)
         coth_x=np.zeros(self.M)
+
         # establish the use of converging limit expressions to prevent overflow error
-        idx_lower=np.where(np.absolute(K.PE)<self.crit_pe)[0]
-        idx_over_pos=np.where((np.absolute(K.PE)>=self.crit_pe) & (K.PE > 0))[0]
-        idx_over_neg=np.where((np.absolute(K.PE)>=self.crit_pe) & (K.PE < 0))[0]
+        idx_lower=np.where(np.absolute(self.circuit.edges['peclet'])<self.crit_pe)[0]
+        idx_over_pos=np.where((np.absolute(self.circuit.edges['peclet'])>=self.crit_pe) & (self.circuit.edges['peclet'] > 0))[0]
+        idx_over_neg=np.where((np.absolute(self.circuit.edges['peclet'])>=self.crit_pe) & (self.circuit.edges['peclet'] < 0))[0]
         idx_pack=[list(idx_lower),list(idx_over_pos)+list(idx_over_neg)]
 
         # subcritical pe
@@ -466,3 +297,48 @@ class overflow(flux,object):
         coth_x[idx_over_neg]=1.
 
         return x,z,e_up_sinh_x,e_down_sinh_x,coth_x,idx_pack
+
+    def solve_absorbing_boundary(self):
+
+        # reduce transport matrix by cutting row,col corresponding to absorbing boundary
+        B_new=self.B_eff[self.idx_eff,:]
+        B_new=B_new[:,self.idx_eff]
+        S=self.circuit.nodes['solute'][self.idx_eff]
+        concentration=np.zeros(self.N)
+
+        # solving inverse flux problem for absorbing boundaries
+        concentration_reduced=np.dot(np.linalg.inv(B_new),S)
+        concentration[self.idx_eff]=concentration_reduced[:]
+
+        # export solution
+        for i,n in enumerate(self.circuit.list_graph_nodes):
+             self.circuit.G.nodes[n]['concentrations']=concentration[i]
+
+        return concentration_reduced ,B_new
+
+    def calc_profile_concentration(self):
+
+        self.update_transport_matrix()
+        c,B_new=self.solve_absorbing_boundary()
+
+        return c,B_new
+
+    def calc_flux_jacobian(self,R,*args):
+
+        # init containers
+        I=np.identity(self.M)
+        J_PE, J_Q= np.zeros((self.M,self.M)),np.zeros((self.M,self.M))
+
+        # set coefficients
+        f1= 2.*np.divide(self.circuit.edge['peclet'],R)
+        f2= 4.* np.divide(self.circuit.edge['flow_rate'],R)
+        R_sq=np.power(R,2)
+        INV=lina.pinv(np.dot(self.B,np.dot(np.diag(self.circuit.edge['conductivity']),self.BT)))
+        D=np.dot(np.dot(self.BT,INV),self.B)
+
+        # calc jacobian
+        for i,c in enumerate(self.circuit.edge['conductivity']):
+            J_PE[i,:]= f1[i] * np.subtract( I[i,:], 2.* c * np.multiply( D[:,i], R_sq/R_sq[i] ) )
+            J_Q[i,:]= f2[i] * np.subtract( I[i,:], c*np.multiply( D[:,i], np.multiply( np.divide(self.circuit.edge['length'][i],self.circuit.edge['length']) , np.power( R_sq/R_sq[i] , 2 ) ) ) )
+
+        return J_PE,J_Q
