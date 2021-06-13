@@ -3,7 +3,7 @@
 # @Email:  kramer@mpi-cbg.de
 # @Project: go-with-the-flow
 # @Last modified by:    Felix Kramer
-# @Last modified time: 2021-06-13T00:42:14+02:00
+# @Last modified time: 2021-06-13T16:56:09+02:00
 # @License: MIT
 
 import networkx as nx
@@ -12,10 +12,15 @@ import scipy.linalg as lina
 from flow_init import *
 from flow_random import *
 
+def initialize_flux_on_circuit(circuit):
+
+    flux_landscape=flux(circuit)
+
+    return flux_landscape
+
 class flux(flow, object):
 
     def __init__(self,*args):
-
         super(flux,self).__init__(args[0])
 
         # incidence correlation
@@ -29,9 +34,9 @@ class flux(flow, object):
 
         self.initialize()
 
-    def initialize(self, K):
+    def initialize(self):
 
-        self.ref_var=self.circuit.scale['diffusion']/self.circuit.scale['length']
+        self.ref_vars=self.circuit.scales['diffusion']/self.circuit.scales['length']
         self.N=len(self.circuit.list_graph_nodes)
         self.M=len(self.circuit.list_graph_edges)
         self.circuit.nodes['concentration']=np.zeros(self.N)
@@ -77,7 +82,7 @@ class flux(flow, object):
 
     def calc_diff_flux(self,R_sq):
 
-        A=np.pi*R_sq*self.ref_var
+        A=np.pi*R_sq*self.ref_vars
 
         return A
 

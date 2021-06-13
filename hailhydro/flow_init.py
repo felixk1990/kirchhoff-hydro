@@ -3,7 +3,7 @@
 # @Email:  kramer@mpi-cbg.de
 # @Project: go-with-the-flow
 # @Last modified by:    Felix Kramer
-# @Last modified time: 2021-06-12T16:30:50+02:00
+# @Last modified time: 2021-06-13T16:55:04+02:00
 # @License: MIT
 
 import numpy as np
@@ -20,7 +20,7 @@ def initialize_flow_on_circuit(circuit):
 class flow():
 
     def __init__(self,circuit):
-        
+
         self.circuit=circuit
         self.B,self.BT=self.circuit.get_incidence_matrices()
 
@@ -67,7 +67,7 @@ class flow():
 
         conduct,source=args
 
-        dP,P=self.calc_pressure(args)
+        dP,P=self.calc_pressure(*args)
         Q=np.dot(np.diag(conduct),dP)
 
         return Q

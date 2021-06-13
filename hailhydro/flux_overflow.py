@@ -3,7 +3,7 @@
 # @Email:  kramer@mpi-cbg.de
 # @Project: go-with-the-flow
 # @Last modified by:    Felix Kramer
-# @Last modified time: 2021-06-13T00:12:30+02:00
+# @Last modified time: 2021-06-13T17:30:49+02:00
 # @License: MIT
 
 
@@ -15,12 +15,17 @@ import scipy.linalg as lina
 import random as rd
 from flux_init import *
 
+def initialize_overflow_on_circuit(circuit):
+
+    overflow_landscape=overflow(circuit)
+
+    return overflow_landscape
+
 class overflow(flux,object):
 
     def __init__(self,*args):
         super(overflow,self).__init__(args[0])
         self.crit_pe=50.
-
 
     # compute concentration profile
     def calc_profile_concentration(self):
@@ -37,7 +42,6 @@ class overflow(flux,object):
         B_new=B_new[:,self.idx_eff]
         S=self.circuit.nodes['solute'][self.idx_eff]
         concentration=np.zeros(self.N)
-
         # solving inverse flux problem for absorbing boundaries
         concentration_reduced=np.dot(np.linalg.inv(B_new),S)
         concentration[self.idx_eff]=concentration_reduced[:]
@@ -50,18 +54,18 @@ class overflow(flux,object):
 
     def update_transport_matrix(self):
 
-        A=self.calc_diff_flux( self.circuit.edge['radius_sq'] )
-        Q=self.calc_flow(self.circuit.edge['conductivity'],self.circuit.node['source'])
-        V=self.calc_velocity_from_flowrate(Q,self.circuit.edge['radius_sq'])
-        self.circuit.edge['peclet']=self.calc_peclet(V)
-        self.circuit.edge['flow_rate']=Q
+        A=self.calc_diff_flux( self.circuit.edges['radius_sq'] )
+        Q=self.calc_flow( self.circuit.edges['conductivity'], self.circuit.nodes['source'] )
+        V=self.calc_velocity_from_flowrate( Q, self.circuit.edges['radius_sq'] )
+        self.circuit.edges['peclet']=self.calc_peclet(V)
+        self.circuit.edges['flow_rate']=Q
 
-        x,z,e_up_sinh_x,e_down_sinh_x,coth_x,idx_pack=*self.compute_flux_pars()
+        x,z,e_up_sinh_x,e_down_sinh_x,coth_x,idx_pack=self.compute_flux_pars()
 
         f1= np.multiply(z,A)
         f2= np.multiply(A,np.multiply(x,coth_x))*0.5
 
-        f3,f4=*self.calc_absorption_jacobian_coefficients_11(0.5*np.multiply(A,x),[e_up_sinh_x,e_down_sinh_x])
+        f3,f4=self.calc_absorption_jacobian_coefficients_11(0.5*np.multiply(A,x),[e_up_sinh_x,e_down_sinh_x])
 
         self.B_eff=np.zeros((self.N,self.N))
 
@@ -110,16 +114,16 @@ class overflow(flux,object):
 
         # calc coefficients
         c_a,c_b=self.get_concentrations_from_edges()
-        x,z,e_up_sinh_x,e_down_sinh_x,coth_x,idx_pack=*self.compute_flux_pars()
+        x,z,e_up_sinh_x,e_down_sinh_x,coth_x,idx_pack=self.compute_flux_pars()
 
-        f1_up,f1_down=*self.calc_absorption_jacobian_coefficients_11(0.5*x,[e_up_sinh_x,e_down_sinh_x])
+        f1_up,f1_down=self.calc_absorption_jacobian_coefficients_11(0.5*x,[e_up_sinh_x,e_down_sinh_x])
         x_coth_x=np.multiply(x,coth_x)*0.5
         F1= np.add( np.subtract(x_coth_x  , f1_up), z)
         F2= np.subtract( np.subtract(x_coth_x , f1_down), z)
 
         # calc edgewise absorption
         phi=np.add(np.multiply(c_a,F1) ,np.multiply( c_b,F2 ))
-        A=self.calc_diff_flux( self.circuit.edge['radius_sq'] )
+        A=self.calc_diff_flux( self.circuit.edges['radius_sq'] )
 
         return np.multiply( A, phi )
 
@@ -140,15 +144,15 @@ class overflow(flux,object):
     def calc_absorption_jacobian(self):
 
         # calc coefficients
-        A=self.calc_diff_flux(  self.circuit.edge['radius_sq'])
+        A=self.calc_diff_flux(  self.circuit.edges['radius_sq'])
         alphas,omegas=self.get_alpha_omega_from_edges()
         c_a,c_b=self.get_concentrations_from_edges()
         c_n=self.get_concentrations_from_nodes()
 
         pars=self.compute_flux_pars()
-        F1,F2=self.calc_absorption_jacobian_coefficients_1(pars)
-        F3,F4=self.calc_absorption_jacobian_coefficients_2(pars)
-        qa,qb,q1,q2=*self.calc_absorption_jacobian_coefficients_11(A,[c_a,c_b,F1,F2])
+        F1,F2=self.calc_absorption_jacobian_coefficients_1(*pars)
+        F3,F4=self.calc_absorption_jacobian_coefficients_2(*pars)
+        qa,qb,q1,q2=self.calc_absorption_jacobian_coefficients_11(A,[c_a,c_b,F1,F2])
         phi=np.add( np.multiply(c_a,F1) ,np.multiply(c_b,F2 ) )
 
         # calc jacobian components
@@ -184,15 +188,15 @@ class overflow(flux,object):
 
         c_n=np.zeros(self.N)
         for i,n in enumerate(self.circuit.list_graph_nodes):
-            c_n[i]=self.G.nodes[n]['concentrations']
+            c_n[i]=self.circuit.G.nodes[n]['concentrations']
 
         return c_n
 
-    def calc_absorption_jacobian_coefficients_1(*args):
+    def calc_absorption_jacobian_coefficients_1(self,*args):
 
-        x,z,e_up_sinh_x,e_down_sinh_x,coth_x=args
+        x,z,e_up_sinh_x,e_down_sinh_x,coth_x,idx_pack=args
 
-        f1_up,f1_down=*self.calc_absorption_jacobian_coefficients_11(0.5*x,[e_up_sinh_x,e_dowm_sinh_x])
+        f1_up,f1_down=self.calc_absorption_jacobian_coefficients_11(0.5*x,[e_up_sinh_x,e_down_sinh_x])
         F1=np.add( np.subtract( 0.5*np.multiply(x,coth_x) ,  f1_up ), z )
         F2=np.subtract( np.subtract( 0.5*np.multiply(x,coth_x) , f1_down ), z)
 
@@ -204,13 +208,14 @@ class overflow(flux,object):
 
         return coeff
 
-    def calc_absorption_jacobian_coefficients_2(self,idx_pack, *args):
+    def calc_absorption_jacobian_coefficients_2(self, *args):
 
+        x,z,e_up_sinh_x,e_down_sinh_x,coth_x,idx_pack=args
         F3=np.zeros(self.M)
         F4=np.zeros(self.M)
         idx_lower=idx_pack[0]
         idx_over=idx_pack[1]
-        x,z,e_up_sinh_x,e_down_sinh_x,coth_x=args
+
         # subcritical
         sinh_x=np.sinh(x[idx_lower]*0.5)
         cosh_x=np.cosh(x[idx_lower]*0.5)
@@ -237,6 +242,7 @@ class overflow(flux,object):
 
         return F3,F4
 
+    # calc flux jacobian and subcomponents
     def calc_flux_jacobian(self):
 
         # init containers
@@ -244,29 +250,31 @@ class overflow(flux,object):
         J_PE, J_Q= np.zeros((self.M,self.M)),np.zeros((self.M,self.M))
 
         # set coefficients
-        f1= 2.*np.divide(self.circuit.edge['peclet'],self.circuit.edge['radius'])
-        f2= 4.* np.divide(self.circuit.edge['flow_rate'],self.circuit.edge['radius'])
+        f1= 2.*np.divide(self.circuit.edges['peclet'],self.circuit.edges['radius'])
+        f2= 4.* np.divide(self.circuit.edges['flow_rate'],self.circuit.edges['radius'])
 
-        INV=lina.pinv(np.dot(self.B,np.dot(np.diag(self.circuit.edge['conductivity']),self.BT)))
+        INV=lina.pinv(np.dot(self.B,np.dot(np.diag(self.circuit.edges['conductivity']),self.BT)))
         D=np.dot(np.dot(self.BT,INV),self.B)
 
         # calc jacobian
-        for i,c in enumerate(self.circuit.edge['conductivity']):
+        for i,c in enumerate(self.circuit.edges['conductivity']):
 
-            sq_kernel=self.circuit.edge['radius_sq']/self.circuit.edge['radius_sq'][i]
-            l_kernel=np.divide(self.circuit.edge['length'][i],self.circuit.edge['length'])
+            sq_kernel=self.circuit.edges['radius_sq']/self.circuit.edges['radius_sq'][i]
+            l_kernel=np.divide(self.circuit.edges['length'][i],self.circuit.edges['length'])
 
             J_PE[i,:]= f1[i] * np.subtract( I[i,:], 2.* c * np.multiply( D[:,i],sq_kernel) )
             J_Q[i,:]= f2[i] * np.subtract( I[i,:], c*np.multiply( D[:,i], np.multiply( l_kernel , np.power( sq_kernel , 2 ) ) ) )
 
         return J_PE,J_Q
 
+    # calc cross section jacobian and subcomponents
     def calc_cross_section_jacobian(self):
 
-        J_A=2.*np.pi*np.diag( self.circuit.edge['radius'])*self.ref_var
+        J_A=2.*np.pi*np.diag( self.circuit.edges['radius'])*self.ref_vars
 
         return J_A
 
+    # calc concentraion jacobian and subcomponents
     def calc_concentration_jacobian(self, J_PE,c ):
 
         # set coefficients
@@ -274,7 +282,7 @@ class overflow(flux,object):
         inv_B, c = self.calc_inv_B(c)
 
         J_C=np.zeros((self.M,self.N))
-        J_diag= calc_cross_section_jacobian
+        J_diag= np.diag(self.calc_cross_section_jacobian())
 
         J_A=np.zeros(self.M)
         for j,e in enumerate(self.circuit.list_graph_edges):
@@ -293,12 +301,12 @@ class overflow(flux,object):
     def calc_concentration_jacobian_coefficients( self, J_PE, c  ):
 
         dict_coeff={}
-        A=self.calc_diff_flux(  self.circuit.edge['radius_sq'] )
-        x,z,e_up_sinh_x,e_down_sinh_x,coth_x,idx_pack=*self.compute_flux_pars()
+        A=self.calc_diff_flux(  self.circuit.edges['radius_sq'] )
+        x,z,e_up_sinh_x,e_down_sinh_x,coth_x,idx_pack=self.compute_flux_pars()
 
         f1= np.multiply(z,A)
         f2= np.multiply(np.multiply(x,coth_x),A)*0.5
-        f3,f4=*self.calc_absorption_jacobian_coefficients_11(0.5*np.multiply(A,x),[e_up_sinh_x,e_down_sinh_x])
+        f3,f4=self.calc_absorption_jacobian_coefficients_11(0.5*np.multiply(A,x),[e_up_sinh_x,e_down_sinh_x])
 
         j_coth_x=np.zeros(self.M)
         idx_lower=idx_pack[0]
@@ -306,8 +314,8 @@ class overflow(flux,object):
 
         f2= np.multiply(x,coth_x)*0.5
         f4=np.subtract( np.multiply( np.divide(z,x), coth_x) ,  np.multiply( z,j_coth_x )*0.5 )
-        f_up,f_down=*self.calc_absorption_jacobian_coefficients_11(0.5*x,[e_up_sinh_x,e_down_sinh_x])
-        f5,f6=*self.calc_absorption_jacobian_coefficients_11(A,[e_up_sinh_x,e_down_sinh_x])
+        f_up,f_down=self.calc_absorption_jacobian_coefficients_11(0.5*x,[e_up_sinh_x,e_down_sinh_x])
+        f5,f6=self.calc_absorption_jacobian_coefficients_11(A,[e_up_sinh_x,e_down_sinh_x])
 
         J_f_up=-np.multiply( f5, np.subtract( np.add( np.divide(z,x), x*0.25 ), np.multiply(z,coth_x)*0.5 ))
         J_f_down=-np.multiply( f6, np.subtract( np.subtract( np.divide(z,x), x*0.25 ), np.multiply(z,coth_x)*0.5 ))
