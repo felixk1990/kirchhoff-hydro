@@ -1,9 +1,9 @@
-# kirchhoff-hydro
+# hailhydro
 hyrdrodynamics methods for kirchhoff graphs
 ##  Introduction
 
 ##  Installation
-pip install kirchhoff
+pip install hailhydro
 
 ##  Usage
 ./notebook contains examples to play with in the form of jupyter notebooks
@@ -12,4 +12,4 @@ pip install kirchhoff
 ##  Gallery
 
 ## Acknowledgement
-```kirchhoff``` written by Felix Kramer
+```hailhydro``` written by Felix Kramer
