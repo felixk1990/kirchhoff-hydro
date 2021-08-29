@@ -1,2 +1,2 @@
 # kirchhoff-hydro
-hyrdrodynamics methods for kirchhoff graphs
+Collecton of tools for computation of flows and and fluxes on Kirchhoff circuits.

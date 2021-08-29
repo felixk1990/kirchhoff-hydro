@@ -3,7 +3,7 @@
 # @Email:  kramer@mpi-cbg.de
 # @Project: go-with-the-flow
 # @Last modified by:    Felix Kramer
-# @Last modified time: 2021-06-13T16:56:09+02:00
+# @Last modified time: 2021-06-25T11:40:46+02:00
 # @License: MIT
 
 import networkx as nx
@@ -72,13 +72,6 @@ class flux(flow, object):
 
             else:
                 print('and I say...whats going on? I say heyayayayayaaaaaaa...')
-
-    def calc_cross_section_from_conductivity(self,*args):
-
-        conductivity,conductance=args
-        R_sq=np.sqrt(conductivity/conductance)
-
-        return R_sq
 
     def calc_diff_flux(self,R_sq):
 

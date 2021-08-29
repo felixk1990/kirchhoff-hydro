@@ -3,7 +3,7 @@
 # @Email:  kramer@mpi-cbg.de
 # @Project: go-with-the-flow
 # @Last modified by:    Felix Kramer
-# @Last modified time: 2021-06-13T16:55:04+02:00
+# @Last modified time: 2021-06-25T16:02:19+02:00
 # @License: MIT
 
 import numpy as np
@@ -74,10 +74,24 @@ class flow():
 
     def calc_sq_flow(self,*args):
 
-        dP,P=self.calc_pressure(args)
+        dP,P=self.calc_pressure(*args)
         Q=self.calc_flow_from_pressure(args[0],dP)
 
         p_sq=np.multiply(dP,dP)
         q_sq=np.multiply(Q,Q)
 
         return p_sq, q_sq
+
+    def calc_cross_section_from_conductivity(self,*args):
+
+        conductivity,conductance=args
+        R_sq=np.sqrt(conductivity/conductance)
+
+        return R_sq
+
+    def calc_conductivity_from_cross_section(self,*args):
+
+        R_sq,conductance=args
+        conductivity=np.power(R_sq,2)*conductance
+
+        return conductivity
