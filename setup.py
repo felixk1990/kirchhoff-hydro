@@ -18,10 +18,10 @@ setuptools.setup(
     version="0.0.1",
     author="felixk1990",
     author_email="felixuwekramer@protonmail.com",
-    description="Collecton of tools for computation of flows and and fluxes on Kirchhoff circuits. ",
+    description="Collection of tools for computation of flows and and fluxes on Kirchhoff circuits. ",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://github.com/felixk1990/kirchhoff-circuit",
+    url="https://github.com/felixk1990/kirchhoff-hydro",
     packages=setuptools.find_packages(),
     classifiers=[
         "Programming Language :: Python :: 3",
