@@ -3,14 +3,14 @@
 # @Email:  kramer@mpi-cbg.de
 # @Project: go-with-the-flow
 # @Last modified by:    Felix Kramer
-# @Last modified time: 2021-06-25T11:40:46+02:00
+# @Last modified time: 2021-08-30T23:39:32+02:00
 # @License: MIT
 
 import networkx as nx
 import numpy as np
 import scipy.linalg as lina
-from flow_init import *
-from flow_random import *
+from hailhydro.flow_init import *
+from hailhydro.flow_random import *
 
 def initialize_flux_on_circuit(circuit):
 

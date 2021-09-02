@@ -3,17 +3,15 @@
 # @Email:  kramer@mpi-cbg.de
 # @Project: go-with-the-flow
 # @Last modified by:    Felix Kramer
-# @Last modified time: 2021-06-13T17:30:49+02:00
+# @Last modified time: 2021-08-30T23:38:31+02:00
 # @License: MIT
-
-
 
 import sys
 import networkx as nx
 import numpy as np
 import scipy.linalg as lina
 import random as rd
-from flux_init import *
+from hailhydro.flux_init import *
 
 def initialize_overflow_on_circuit(circuit):
 

@@ -3,7 +3,7 @@
 # @Email:  kramer@mpi-cbg.de
 # @Project: go-with-the-flow
 # @Last modified by:    Felix Kramer
-# @Last modified time: 2021-06-12T14:45:23+02:00
+# @Last modified time: 2021-08-30T23:39:31+02:00
 # @License: MIT
 
 import numpy as np
@@ -12,7 +12,7 @@ import sys
 
 import random as rd
 import networkx as nx
-from flow_init import *
+from hailhydro.flow_init import *
 
 def initialize_random_flow_on_circuit(circuit,flow_setting={'mode':'default', 'noise':0.}):
 
