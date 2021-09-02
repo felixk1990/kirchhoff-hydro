@@ -47,6 +47,7 @@ class overflow(flux,object):
         # export solution
         for i,n in enumerate(self.circuit.list_graph_nodes):
              self.circuit.G.nodes[n]['concentrations']=concentration[i]
+        self.circuit.nodes['concentration']=concentration[:]
 
         return concentration_reduced ,B_new
 
@@ -123,7 +124,10 @@ class overflow(flux,object):
         phi=np.add(np.multiply(c_a,F1) ,np.multiply( c_b,F2 ))
         A=self.calc_diff_flux( self.circuit.edges['radius_sq'] )
 
-        return np.multiply( A, phi )
+        PHI=np.multiply( A, phi )
+        self.circuit.edges['uptake']=PHI[:]
+
+        return PHI
 
     def get_concentrations_from_edges(self):
 
@@ -145,7 +149,8 @@ class overflow(flux,object):
         A=self.calc_diff_flux(  self.circuit.edges['radius_sq'])
         alphas,omegas=self.get_alpha_omega_from_edges()
         c_a,c_b=self.get_concentrations_from_edges()
-        c_n=self.get_concentrations_from_nodes()
+        # c_n=self.get_concentrations_from_nodes()
+        c_n=self.circuit.nodes['concentration']
 
         pars=self.compute_flux_pars()
         F1,F2=self.calc_absorption_jacobian_coefficients_1(*pars)
@@ -181,14 +186,6 @@ class overflow(flux,object):
             omegas.append(b)
 
         return alphas, omegas
-
-    def get_concentrations_from_nodes(self):
-
-        c_n=np.zeros(self.N)
-        for i,n in enumerate(self.circuit.list_graph_nodes):
-            c_n[i]=self.circuit.G.nodes[n]['concentrations']
-
-        return c_n
 
     def calc_absorption_jacobian_coefficients_1(self,*args):
 
