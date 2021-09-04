@@ -3,11 +3,12 @@
 # @Email:  kramer@mpi-cbg.de
 # @Project: go-with-the-flow
 # @Last modified by:    Felix Kramer
-# @Last modified time: 2021-06-25T16:02:19+02:00
+# @Last modified time: 2021-09-04T23:31:01+02:00
 # @License: MIT
 
 import numpy as np
 import networkx as nx
+import kirchhoff.circuit_flow as kfc
 
 # take an initiliazed circuit and start computing flows
 def initialize_flow_on_circuit(circuit):
@@ -95,3 +96,13 @@ class flow():
         conductivity=np.power(R_sq,2)*conductance
 
         return conductivity
+
+    def calc_configuration_flow(self):
+
+        k= self.circuit.edges['conductivity']
+        src= self.circuit.nodes['source']
+
+        dP,P=self.calc_pressure(k,src)
+        Q=np.dot(np.diag(k),dP)
+
+        return Q

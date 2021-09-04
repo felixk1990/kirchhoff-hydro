@@ -3,7 +3,7 @@
 # @Email:  kramer@mpi-cbg.de
 # @Project: go-with-the-flow
 # @Last modified by:    Felix Kramer
-# @Last modified time: 2021-08-30T23:39:37+02:00
+# @Last modified time: 2021-09-05T00:06:13+02:00
 # @License: MIT
 
 
@@ -15,7 +15,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setuptools.setup(
     name="hailhydro", # Replace with your own username
-    version="0.0.4",
+    version="0.0.5",
     author="felixk1990",
     author_email="felixuwekramer@protonmail.com",
     description="Collection of tools for computation of flows and and fluxes on Kirchhoff circuits. ",
