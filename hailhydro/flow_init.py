@@ -47,9 +47,7 @@ class flow():
 
         return alpha,omega
 
-    def calc_pressure(self,*args):
-
-        conduct,source=args
+    def calc_pressure(self,conduct,source):
 
         OP=np.dot(self.B,np.dot(np.diag(conduct),self.BT))
         P,RES,RG,si=np.linalg.lstsq(OP,source,rcond=None)
@@ -57,42 +55,37 @@ class flow():
 
         return dP, P
 
-    def calc_flow_from_pressure(self,*args):
+    def calc_flow_from_pressure(self,conduct,dP):
 
-        conduct,dP=args
         Q=np.dot(np.diag(conduct),dP)
 
         return Q
 
-    def calc_flow(self,*args):
+    def calc_flow(self,conduct,source):
 
-        conduct,source=args
-
-        dP,P=self.calc_pressure(*args)
+        dP,P=self.calc_pressure(conduct,source)
         Q=np.dot(np.diag(conduct),dP)
 
         return Q
 
-    def calc_sq_flow(self,*args):
+    def calc_sq_flow(self,conduct,source):
 
-        dP,P=self.calc_pressure(*args)
-        Q=self.calc_flow_from_pressure(args[0],dP)
+        dP,P=self.calc_pressure(conduct,source)
+        Q=self.calc_flow_from_pressure(conduct,dP)
 
         p_sq=np.multiply(dP,dP)
         q_sq=np.multiply(Q,Q)
 
         return p_sq, q_sq
 
-    def calc_cross_section_from_conductivity(self,*args):
+    def calc_cross_section_from_conductivity(self,conductivity,conductance):
 
-        conductivity,conductance=args
         R_sq=np.sqrt(conductivity/conductance)
 
         return R_sq
 
-    def calc_conductivity_from_cross_section(self,*args):
+    def calc_conductivity_from_cross_section(self,R_sq,conductance):
 
-        R_sq,conductance=args
         conductivity=np.power(R_sq,2)*conductance
 
         return conductivity
