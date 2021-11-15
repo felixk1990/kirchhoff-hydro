@@ -34,10 +34,10 @@ class flux_random(overflow, flow_reroute, object):
         R_powers = calc_random_radii(idx, conduct)
         p_sq = np.power([fo[2] for fo in flow_observables], 2)
 
-        PHI = list(map(self.calc_noisy_absorption, R_powers[1], flow_observables ) )
+        PHI = list(map(self.calc_noisy_absorption, R_powers[1], flow_observables))
         SHEAR = np.multiply(dV_sq, R_powers[1])
 
-        avg_shear_sq = np.sum(np.multiply(dV_sq, R_sq), axis = 0)/float(self.num_iteration)
+        avg_shear_sq = np.sum(np.multiply(dV_sq, R_sq), axis=0)/float(self.num_iteration)
         avg_PHI = np.mean(PHI, axis = 0)
 
         return shear, phi
@@ -57,8 +57,8 @@ class flux_random(overflow, flow_reroute, object):
         ref_var = self.circuit.scale['length']/self.circuit.scale['diffusion']
 
         V = self.calc_velocity_from_flowrate(self.circuit.edge['flow_rate'], R_sq)
-        self.circuit.edge['peclet'] = self.calc_peclet(V, ref_var )
-        A = self.calc_diff_flux(R_sq, 1./ref_var )
+        self.circuit.edge['peclet'] = self.calc_peclet(V, ref_var)
+        A = self.calc_diff_flux(R_sq, 1./ref_var)
 
         x, z, e_up_sinh_x, e_down_sinh_x, coth_x, idx_pack = self.compute_flux_pars()
 

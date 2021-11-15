@@ -98,4 +98,4 @@ class flow():
         dP, P = self.calc_pressure(k, src)
         Q = np.dot(np.diag(k), dP)
 
-        return Q
+        return Q, dP
