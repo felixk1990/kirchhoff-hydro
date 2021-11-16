@@ -8,23 +8,26 @@
 
 import numpy as np
 import scipy.linalg as lina
-import sys
-
 import random as rd
 import networkx as nx
-from hailhydro.flow_init import *
+from hailhydro.flow_init import flow
+rand = {'mode': 'default', 'noise': 0.}
+reroute = {'p_broken': 0, 'num_iter': 100}
 
-def initialize_random_flow_on_circuit(circuit, flow_setting={'mode':'default', 'noise':0.}):
+
+def initialize_random_flow_on_circuit(circuit, flow_setting=rand):
 
     flow_landscape = flow_random(circuit, flow_setting)
 
     return flow_landscape
 
-def initialize_rerouting_flow_on_circuit(circuit, flow_setting={'p_broken':0, 'num_iter':100}):
+
+def initialize_rerouting_flow_on_circuit(circuit, flow_setting=reroute):
 
     flow_landscape = flow_reroute(circuit, flow_setting)
 
     return flow_landscape
+
 
 class flow_random(flow, object):
 
@@ -36,10 +39,12 @@ class flow_random(flow, object):
             self.set_effective_source_matrix(flow_setting['noise'])
 
         if flow_setting['mode'] == 'root':
-            self.set_multi_source_matrix(flow_setting['mu_sq'], flow_setting['var'])
+            mu_sq = flow_setting['mu_sq']
+            var = flow_setting['var']
+            self.set_multi_source_matrix(mu_sq, var)
 
     # setup_random_fluctuations
-    def set_root_source_matrix(self, mean, variance ):
+    def set_root_source_matrix(self, mean, variance):
 
         N = len(self.circuit.list_graph_nodes)
 
@@ -48,12 +53,12 @@ class flow_random(flow, object):
             for m in range(N):
                 h = 0.
                 if n == 0 and m == 0:
-                    h +=  (N-1)
-                elif n ==  m and n!= 0:
+                    h += (N-1)
+                elif n == m and n != 0:
                     h += 1.
-                elif n == 0 and m!= 0:
+                elif n == 0 and m != 0:
                     h -= 1.
-                elif m ==  0 and n!= 0:
+                elif m == 0 and n != 0:
                     h -= 1.
 
                 self.matrix_mu[n, m] = h
@@ -65,14 +70,14 @@ class flow_random(flow, object):
 
             for m in range(N):
                 h = 0.
-                if n == 0 and m ==  0:
+                if n == 0 and m == 0:
                     h += (1-N)*(1-N)
-                elif n!= 0 and m!= 0:
-                    h +=  1.
-                elif n == 0 and m!= 0:
-                    h +=  (1-N)
-                elif m == 0 and n!= 0:
-                    h +=  (1-N)
+                elif n != 0 and m != 0:
+                    h += 1.
+                elif n == 0 and m != 0:
+                    h += (1-N)
+                elif m == 0 and n != 0:
+                    h += (1-N)
 
                 self.matrix_var[n, m] = h
 
@@ -83,8 +88,8 @@ class flow_random(flow, object):
 
         self.noise = noise
         num_n = len(self.circuit.list_graph_nodes)
-        x = np.where( self.circuit.nodes['source'] > 0)[0]
-        idx = np.where( self.circuit.nodes['source'] < 0)[0]
+        x = np.where(self.circuit.nodes['source'] > 0)[0]
+        idx = np.where(self.circuit.nodes['source'] < 0)[0]
         N = len(idx)
         M = len(x)
 
@@ -101,7 +106,7 @@ class flow_random(flow, object):
                 sum_delta = 0.
                 sum_delta_sq = 0.
 
-                if i ==  j:
+                if i == j:
                     delta = 1.
 
                 if (i in x):
@@ -114,15 +119,19 @@ class flow_random(flow, object):
                     sum_delta_sq = 1.
                     sum_delta = 2.
 
-                U[i, j] =  ( m_sq - num_n*sum_delta + NM*sum_delta_sq )
-                V[i, j] =  ( ( Nm + delta )*sum_delta_sq - (1.+M*delta)*sum_delta + m_sq*delta)
+                U[i, j] = (m_sq - num_n*sum_delta + NM*sum_delta_sq)
+
+                v1 = (Nm + delta)*sum_delta_sq
+                v2 = (1.+M*delta)*sum_delta
+                v3 = m_sq*delta
+                V[i, j] = (v1 - v2 + v3)
 
                 U[j, i] = U[i, j]
                 V[j, i] = V[i, j]
 
-        self.Z  =  np.add(U, np.multiply(self.noise, V))
+        self.Z = np.add(U, np.multiply(self.noise, V))
 
-     # calc_sq_flow
+    # calc_sq_flow
     def calc_sq_flow_effective(self, conduct):
 
         OP = np.dot(self.B, np.dot(np.diag(conduct), self.BT))
@@ -135,6 +144,7 @@ class flow_random(flow, object):
         F_sq = np.multiply(np.multiply(conduct, conduct), dV_sq)
 
         return dV_sq, F_sq
+
     # calc_sq_flow_random
     def calc_sq_flow_root(self, conduct):
 
@@ -149,16 +159,17 @@ class flow_random(flow, object):
         var_flow = np.diag(var_matrix)
         mean_flow = np.diag(mean_matrix)
 
-        dV_sq =  np.add(var_flow, mean_flow)
+        dV_sq = np.add(var_flow, mean_flow)
         F_sq = np.multiply(np.multiply(conduct, conduct), dV_sq)
 
         return dV_sq, F_sq
+
 
 class flow_reroute(flow, object):
 
     def __init__(self, circuit, flow_setting):
 
-        super( flow_reroute, self).__init__(circuit)
+        super(flow_reroute, self).__init__(circuit)
 
         self.num_iteration = flow_setting['num_iter']
         self.percentage_broken = flow_setting['p_broken']
@@ -175,8 +186,8 @@ class flow_reroute(flow, object):
                 broken_sets.append(idx)
 
         self.broken_sets = broken_sets
-        if len(self.broken_sets) == 0:
-            sys.exit('nothing broken here... srsly check initialize_broken_link() though')
+
+        assert(len(self.broken_sets) != 0)
 
     def generate_coherent_closure_deterministic(self, H, x):
 
@@ -193,7 +204,7 @@ class flow_reroute(flow, object):
     def generate_coherent_closure(self):
 
         prob = np.random.sample(len(self.circuit.list_graph_edges))
-        idx = np.where(   prob <=  self.percentage_broken )[0]
+        idx = np.where(prob <= self.percentage_broken)[0]
 
         for e in idx:
             self.AUX.remove_edge(*self.circuit.list_graph_edges[e])
@@ -247,7 +258,6 @@ class flow_reroute(flow, object):
     def calc_flows_mapping(self, graph_matrices):
 
         C_aux = graph_matrices
-
         dP, P = self.calc_pressure(C_aux, self.circuit.nodes['source'])
         Q = self.calc_flow_from_pressure(C_aux, dP)
 
@@ -258,10 +268,11 @@ class flow_reroute(flow, object):
         idx = rd.choices(self.broken_sets, k=self.num_iteration)
 
         p_sq, q_sq = self.calc_sq_flow(idx, conduct)
-        R, R_sq,  R_cb = self.calc_random_radii(idx, conduct)
+        R, R_sq, R_cb = self.calc_random_radii(idx, conduct)
 
-        avg_diss = np.sum(np.multiply(p_sq, R_cb), axis=0)/float(self.num_iteration)
-        avg_R = np.mean(R, axis = 0)
+        n = float(self.num_iteration)
+        avg_diss = np.sum(np.multiply(p_sq, R_cb), axis=0)/n
+        avg_R = np.mean(R, axis=0)
         avg_dP_sq = np.mean(p_sq, axis=0)
         avg_F_sq = np.mean(q_sq, axis=0)
 
