@@ -5,18 +5,16 @@
 # @Last modified by:    Felix Kramer
 # @Last modified time: 2021-08-30T23:39:32+02:00
 # @License: MIT
-
-import networkx as nx
 import numpy as np
-import scipy.linalg as lina
-from hailhydro.flow_init import *
-from hailhydro.flow_random import *
+from hailhydro.flow_init import flow
+
 
 def initialize_flux_on_circuit(circuit):
 
     flux_landscape = flux(circuit)
 
     return flux_landscape
+
 
 class flux(flow, object):
 
@@ -36,25 +34,30 @@ class flux(flow, object):
 
     def initialize(self):
 
-        self.ref_vars = self.circuit.scales['diffusion']/self.circuit.scales['length']
+        diff = self.circuit.scales['diffusion']
+        L = self.circuit.scales['length']
+        self.ref_vars = diff/L
         self.N = len(self.circuit.list_graph_nodes)
         self.M = len(self.circuit.list_graph_edges)
         self.circuit.nodes['concentration'] = np.zeros(self.N)
 
-        self.roots = self.find_roots(self.circuit.G)
-        self.sinks = self.find_sinks(self.circuit.G)
-        self.nodes_sinks = [self.circuit.G.nodes[sink]['label'] for sink in self.sinks]
-        self.nodes_roots = [self.circuit.G.nodes[source]['label'] for source in self.roots]
+        sinks = self.find_sinks(self.circuit.G)
+        roots = self.find_roots(self.circuit.G)
+
+        self.sinks = sinks
+        self.roots = roots
+        self.nodes_sinks = [self.circuit.G.nodes[n]['label'] for n in sinks]
+        self.nodes_roots = [self.circuit.G.nodes[n]['label'] for n in roots]
 
         self.idx_eff = [i for i in range(self.N) if i not in self.nodes_sinks]
 
-        for i, n in  enumerate(self.circuit.list_graph_nodes):
+        for i, n in enumerate(self.circuit.list_graph_nodes):
             self.dict_in[n] = []
             self.dict_out[n] = []
-            self.dict_node_out[n] = np.where(self.B[i, :]>0)[0]
-            self.dict_node_in[n] = np.where(self.B[i, :]<0)[0]
+            self.dict_node_out[n] = np.where(self.B[i, :] > 0)[0]
+            self.dict_node_in[n] = np.where(self.B[i, :] < 0)[0]
 
-        for j, e in  enumerate(self.circuit.list_graph_edges):
+        for j, e in enumerate(self.circuit.list_graph_edges):
 
             alpha = e[1]
             omega = e[0]
@@ -71,7 +74,7 @@ class flux(flow, object):
                 self.dict_out[omega].append(alpha)
 
             else:
-                print('and I say...whats going on? I say heyayayayayaaaaaaa...')
+                print('and I say...whats going on? I say heyayayayayaaaaa...')
 
     def calc_diff_flux(self, R_sq):
 
@@ -81,7 +84,7 @@ class flux(flow, object):
 
     def calc_velocity_from_flowrate(self, Q, R_sq):
 
-        V  =  np.divide(Q, R_sq*np.pi)
+        V = np.divide(Q, R_sq*np.pi)
 
         return V
 

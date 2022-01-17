@@ -5,15 +5,10 @@
 # @Last modified by:    Felix Kramer
 # @Last modified time: 2021-08-30T23:39:30+02:00
 # @License: MIT
-
-import sys
-import networkx as nx
 import numpy as np
-import scipy.linalg as lina
-import random as rd
-from hailhydro.flux_init import *
-from hailhydro.flow_random import *
-from hailhydro.flux_overflow import *
+from hailhydro.flow_random import flow_reroute
+from hailhydro.flux_overflow import overflow
+
 
 class flux_random(overflow, flow_reroute, object):
 
@@ -27,20 +22,21 @@ class flux_random(overflow, flow_reroute, object):
 
         return flow_observables
 
-    def calc_transport_observables(self, idx, conduct, flow_observables):
+    def calc_transport_observables(self, idx, conduct, flow_obs):
 
         # calc ensemble averages
-        graph_matrices = self.get_broken_links_asarray(idx, conduct)
-        R_powers = calc_random_radii(idx, conduct)
-        p_sq = np.power([fo[2] for fo in flow_observables], 2)
+        self.get_broken_links_asarray(idx, conduct)
+        R_powers = self.calc_random_radii(idx, conduct)
+        dV_sq = np.power([fo[2] for fo in flow_obs], 2)
 
-        PHI = list(map(self.calc_noisy_absorption, R_powers[1], flow_observables))
-        SHEAR = np.multiply(dV_sq, R_powers[1])
+        R_sq = R_powers[1]
+        PHI = list(map(self.calc_noisy_absorption, R_sq, flow_obs))
+        SHEAR = np.multiply(dV_sq, R_sq)
 
-        avg_shear_sq = np.sum(np.multiply(dV_sq, R_sq), axis=0)/float(self.num_iteration)
-        avg_PHI = np.mean(PHI, axis = 0)
+        avg_shear_sq = np.mean(SHEAR, axis=0)
+        avg_PHI = np.mean(PHI, axis=0)
 
-        return shear, phi
+        return avg_shear_sq, avg_PHI
 
     def calc_noisy_absorption(self, R_sq, flow_observables):
 
@@ -50,17 +46,21 @@ class flux_random(overflow, flow_reroute, object):
 
         return self.calc_absorption(R_sq)
 
-    def update_transport_matrix(self, R_sq, flow_observables):
+    def update_transport_matrix(self, R_sq, flow_obs):
 
         # set peclet number and internal flow state
-        self.circuit.edge['flow_rate'] = flow_observables[0]
+        self.circuit.edge['flow_rate'] = flow_obs[0]
         ref_var = self.circuit.scale['length']/self.circuit.scale['diffusion']
 
-        V = self.calc_velocity_from_flowrate(self.circuit.edge['flow_rate'], R_sq)
+        flow_rate = self.circuit.edge['flow_rate']
+        V = self.calc_velocity_from_flowrate(flow_rate, R_sq)
         self.circuit.edge['peclet'] = self.calc_peclet(V, ref_var)
         A = self.calc_diff_flux(R_sq, 1./ref_var)
 
-        x, z, e_up_sinh_x, e_down_sinh_x, coth_x, idx_pack = self.compute_flux_pars()
+        x, z = self.compute_flux_PeAbs()
+        idx_pack = self.compute_flux_idx()
+        args = [x, z, idx_pack]
+        e_up_sinh_x, e_down_sinh_x, coth_x = self.compute_flux_exp(*args)
 
         f1 = np.multiply(z, A)
         f2 = np.multiply(A, np.multiply(x, coth_x))*0.5
@@ -73,6 +73,9 @@ class flux_random(overflow, flow_reroute, object):
 
         for i, n in enumerate(self.circuit.list_graph_nodes):
 
-            self.B_eff[i, i] = np.sum( np.add(np.multiply(self.B[i, :], f1), np.multiply(np.absolute(self.B[i, :]), f2)))
+            b1 = np.multiply(self.B[i, :], f1)
+            b2 = np.multiply(np.absolute(self.B[i, :]), f2)
+            b12 = np.add(b1, b2)
+            self.B_eff[i, i] = np.sum(b12)
             self.B_eff[i, self.dict_in[n]] = -f3[self.dict_node_in[n]]
             self.B_eff[i, self.dict_out[n]] = -f4[self.dict_node_out[n]]

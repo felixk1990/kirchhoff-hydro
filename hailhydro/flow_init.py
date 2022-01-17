@@ -5,10 +5,8 @@
 # @Last modified by:    Felix Kramer
 # @Last modified time: 2021-09-04T23:31:01+02:00
 # @License: MIT
-
 import numpy as np
 import networkx as nx
-import kirchhoff.circuit_flow as kfc
 
 
 # take an initiliazed circuit and start computing flows
@@ -17,6 +15,7 @@ def initialize_flow_on_circuit(circuit):
     flow_landscape = flow(circuit)
 
     return flow_landscape
+
 
 class flow():
 
@@ -27,13 +26,15 @@ class flow():
 
     def find_roots(self, G):
 
-        roots = [n for n in self.circuit.list_graph_nodes if G.nodes[n]['source']>0]
+        list_n = self.circuit.list_graph_nodes
+        roots = [n for n in list_n if G.nodes[n]['source'] > 0]
 
         return roots
 
     def find_sinks(self, G):
 
-        sinks = [n for n in self.circuit.list_graph_nodes if G.nodes[n]['source']<0]
+        list_n = self.circuit.list_graph_nodes
+        sinks = [n for n in list_n if G.nodes[n]['source'] < 0]
 
         return sinks
 
@@ -92,8 +93,8 @@ class flow():
 
     def calc_configuration_flow(self):
 
-        k =  self.circuit.edges['conductivity']
-        src =  self.circuit.nodes['source']
+        k = self.circuit.edges['conductivity']
+        src = self.circuit.nodes['source']
 
         dP, P = self.calc_pressure(k, src)
         Q = np.dot(np.diag(k), dP)
