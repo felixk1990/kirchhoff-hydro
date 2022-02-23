@@ -6,14 +6,19 @@
 # @Last modified time: 2021-08-30T23:39:30+02:00
 # @License: MIT
 import numpy as np
-from hailhydro.flow_random import flow_reroute
-from hailhydro.flux_overflow import overflow
+from hailhydro.flow_random import FlowReroute
+from hailhydro.flux_overflow import Overflow
+from dataclasses import dataclass, field
 
 
-class flux_random(overflow, flow_reroute, object):
+@dataclass
+class FluxRandom(Overflow, FlowReroute):
 
-    def __init__(self, circuit):
-        super(flux_random, self).__init__(circuit)
+    def __post_init__(self, circuit):
+
+        self.init_flux()
+        self.crit_pe = 50.
+        self.init_random()
 
     def calc_flow(self, *args):
 

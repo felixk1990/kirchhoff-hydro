@@ -7,20 +7,16 @@
 # @License: MIT
 import numpy as np
 import scipy.linalg as lina
-from hailhydro.flux_init import flux
+from hailhydro.flux_init import Flux
+from dataclasses import dataclass, field
 
 
-def initialize_overflow_on_circuit(circuit):
+@dataclass
+class Overflow(Flux):
 
-    overflow_landscape = overflow(circuit)
+    def __post_init__(self):
 
-    return overflow_landscape
-
-
-class overflow(flux, object):
-
-    def __init__(self, circuit):
-        super(overflow, self).__init__(circuit)
+        self.init_flux()
         self.crit_pe = 50.
 
     # compute concentration profile
@@ -35,9 +31,11 @@ class overflow(flux, object):
 
         # reduce transport matrix by cutting row, col corresponding to
         # absorbing boundary
+
         B_new = self.B_eff[self.idx_eff, :]
         B_new = B_new[:, self.idx_eff]
         S = self.circuit.nodes['solute'][self.idx_eff]
+
         concentration = np.zeros(self.N)
         # solving inverse flux problem for absorbing boundaries
         concentration_reduced = np.dot(np.linalg.inv(B_new), S)

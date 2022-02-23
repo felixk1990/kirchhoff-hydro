@@ -7,21 +7,52 @@
 # @License: MIT
 import numpy as np
 import networkx as nx
+# from kirchhoff.circuit_init import Circuit
+from kirchhoff.circuit_flow import FlowCircuit
+from dataclasses import dataclass, field
 
 
-# take an initiliazed circuit and start computing flows
-def initialize_flow_on_circuit(circuit):
+@dataclass
+class Flow():
 
-    flow_landscape = flow(circuit)
+    constr: nx.Graph = field(repr=False, init=True)
+    pars_source: dict = field(default_factory=dict, repr=False)
+    pars_plexus: dict = field(default_factory=dict, repr=False)
+    info: str = 'unknown'
 
-    return flow_landscape
+    def __post_init__(self):
 
+        self.init_flow()
 
-class flow():
+    def init_flow(self):
 
-    def __init__(self, circuit):
+        if type(self.constr) == nx.Graph:
 
-        self.circuit = circuit
+            self.circuit = FlowCircuit(self.constr)
+            self.set_boundaries()
+
+        elif type(self.constr) == FlowCircuit:
+
+            self.circuit = self.constr
+            self.G = self.constr.G
+            self.set_boundaries()
+
+        # elif type(self.constr) == Circuit:
+        #     print('Hmm we might use that...When somebody implements it')
+
+        else:
+            raise Exception('Warning! Non-networkx type given for initialization, no internal circuit established.')
+
+    def set_boundaries(self):
+
+        par1 = self.circuit.graph['source_mode']
+        par2 = self.circuit.graph['plexus_mode']
+
+        if par1 == '' or par2 == '':
+            self.circuit.set_source_landscape(**self.pars_source)
+            self.circuit.set_plexus_landscape(**self.pars_plexus)
+
+        self.info = self.circuit.info
         self.B, self.BT = self.circuit.get_incidence_matrices()
 
     def find_roots(self, G):

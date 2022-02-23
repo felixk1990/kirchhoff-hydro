@@ -10,7 +10,8 @@ import numpy as np
 import scipy.linalg as lina
 import random as rd
 import networkx as nx
-from hailhydro.flow_init import flow
+from hailhydro.flow_init import Flow
+from dataclasses import dataclass, field
 rand = {'mode': 'default', 'noise': 0.}
 reroute = {'p_broken': 0, 'num_iter': 100}
 
@@ -29,19 +30,29 @@ def initialize_rerouting_flow_on_circuit(circuit, flow_setting=reroute):
     return flow_landscape
 
 
-class flow_random(flow, object):
+@dataclass
+class FlowRandom(Flow):
 
-    def __init__(self, circuit, flow_setting):
+    default = dict(repr=False, init=True)
+    flow_setting: dict = field(default_factory=dict, **default)
 
-        super(flow_random, self).__init__(circuit)
+    def __post_init__(self):
 
-        if flow_setting['mode'] == 'default':
-            self.set_effective_source_matrix(flow_setting['noise'])
+        self.init_flow()
+        self.init_random()
 
-        if flow_setting['mode'] == 'root':
-            mu_sq = flow_setting['mu_sq']
-            var = flow_setting['var']
-            self.set_multi_source_matrix(mu_sq, var)
+    def init_random(self):
+
+        try:
+            if self.flow_setting['mode'] == 'default':
+                self.set_effective_source_matrix(self.flow_setting['noise'])
+
+            elif self.flow_setting['mode'] == 'root':
+                self.mu_sq = self.flow_setting['mu_sq']
+                self.var = self.flow_setting['var']
+                self.set_multi_source_matrix(self.mu_sq, self.var)
+        except:
+            raise Exception('Warning flow landscape not set!')
 
     # setup_random_fluctuations
     def set_root_source_matrix(self, mean, variance):
@@ -164,15 +175,18 @@ class flow_random(flow, object):
 
         return dV_sq, F_sq
 
+@dataclass
+class FlowReroute(Flow):
 
-class flow_reroute(flow, object):
+    default = dict(repr=False, init=True)
 
-    def __init__(self, circuit, flow_setting):
+    flow_setting: dict = field(default_factory=dict, **default)
 
-        super(flow_reroute, self).__init__(circuit)
+    def __post_init__(self):
 
-        self.num_iteration = flow_setting['num_iter']
-        self.percentage_broken = flow_setting['p_broken']
+        self.init_flow()
+        self.num_iteration = self.flow_setting['num_iter']
+        self.percentage_broken = self.flow_setting['p_broken']
         self.initialize_broken_link()
 
     def initialize_broken_link(self):
