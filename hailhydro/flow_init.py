@@ -7,7 +7,7 @@
 # @License: MIT
 import numpy as np
 import networkx as nx
-# from kirchhoff.circuit_init import Circuit
+from kirchhoff.circuit_init import Circuit
 from kirchhoff.circuit_flow import FlowCircuit
 from dataclasses import dataclass, field
 
@@ -18,7 +18,7 @@ class Flow():
     constr: nx.Graph = field(repr=False, init=True)
     pars_source: dict = field(default_factory=dict, repr=False)
     pars_plexus: dict = field(default_factory=dict, repr=False)
-    info: str = 'unknown'
+
 
     def __post_init__(self):
 
@@ -26,22 +26,24 @@ class Flow():
 
     def init_flow(self):
 
-        if type(self.constr) == nx.Graph:
+        self.info: str = 'unknown'
+
+        if isinstance(self.constr, nx.Graph):
 
             self.circuit = FlowCircuit(self.constr)
-            self.set_boundaries()
 
-        elif type(self.constr) == FlowCircuit:
+        elif isinstance(self.constr, FlowCircuit):
 
             self.circuit = self.constr
-            self.G = self.constr.G
-            self.set_boundaries()
 
-        # elif type(self.constr) == Circuit:
-        #     print('Hmm we might use that...When somebody implements it')
+        elif isinstance(self.constr, Circuit):
+
+            self.circuit = FlowCircuit(self.constr.G)
 
         else:
             raise Exception('Warning! Non-networkx type given for initialization, no internal circuit established.')
+
+        self.set_boundaries()
 
     def set_boundaries(self):
 

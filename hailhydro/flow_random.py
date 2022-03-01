@@ -16,25 +16,11 @@ rand = {'mode': 'default', 'noise': 0.}
 reroute = {'p_broken': 0, 'num_iter': 100}
 
 
-def initialize_random_flow_on_circuit(circuit, flow_setting=rand):
-
-    flow_landscape = flow_random(circuit, flow_setting)
-
-    return flow_landscape
-
-
-def initialize_rerouting_flow_on_circuit(circuit, flow_setting=reroute):
-
-    flow_landscape = flow_reroute(circuit, flow_setting)
-
-    return flow_landscape
-
-
 @dataclass
 class FlowRandom(Flow):
 
     default = dict(repr=False, init=True)
-    flow_setting: dict = field(default_factory=dict, **default)
+    flow_setting: dict = field(default_factory=dict(), **default)
 
     def __post_init__(self):
 
