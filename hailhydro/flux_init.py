@@ -8,6 +8,7 @@
 import numpy as np
 import networkx as nx
 from hailhydro.flow_init import Flow
+from kirchhoff.circuit_init import Circuit
 from kirchhoff.circuit_flux import FluxCircuit
 from dataclasses import dataclass, field
 
@@ -16,23 +17,27 @@ from dataclasses import dataclass, field
 class Flux(Flow):
 
     # incidence correlation
-    default = dict(
+    defVal1 = dict(
         default_factory=dict,
         repr=False,
         init=False,
         )
+    defVal2 = dict(
+        default_factory=dict,
+        repr=False,
+        )
 
-    pars_solute: dict = field(default_factory=dict, repr=False)
-    pars_abs: dict = field(default_factory=dict, repr=False)
-    pars_geom: dict = field(default_factory=dict, repr=False)
+    pars_solute: dict = field(**defVal2)
+    pars_abs: dict = field(**defVal2)
+    pars_geom: dict = field(**defVal2)
 
-    dict_in: dict = field(**default)
-    dict_out: dict = field(**default)
-    dict_edges: dict = field(**default)
+    dict_in: dict = field(**defVal1)
+    dict_out: dict = field(**defVal1)
+    dict_edges: dict = field(**defVal1)
 
     # incidence indices
-    dict_node_out: dict = field(**default)
-    dict_node_in: dict = field(**default)
+    dict_node_out: dict = field(**defVal1)
+    dict_node_in: dict = field(**defVal1)
 
     def __post_init__(self):
 
@@ -44,24 +49,21 @@ class Flux(Flow):
 
             self.circuit = FluxCircuit(self.constr)
 
-            self.set_boundaries()
-            self.set_solute_boundaries()
-            self.init_parameters()
-
         elif type(self.constr) == FluxCircuit:
 
             self.circuit = self.constr
-            self.G = self.constr.G
 
-            self.set_boundaries()
-            self.set_solute_boundaries()
-            self.init_parameters()
 
-        # elif type(self.constr) == Circuit:
-        #     print('Hmm we might use that...When somebody implements it')
+        elif isinstance(self.constr, Circuit):
+
+            self.circuit = FluxCircuit(self.constr.G)
 
         else:
             raise Exception('Warning! Non-networkx type given for initialization, no internal circuit established.')
+
+        self.set_boundaries()
+        self.set_solute_boundaries()
+        self.init_parameters()
 
     def init_parameters(self):
 

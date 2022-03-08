@@ -20,23 +20,23 @@ class Overflow(Flux):
         self.crit_pe = 50.
 
     # compute concentration profile
-    def calc_profile_concentration(self):
-
-        self.update_transport_matrix()
-        c, B_new = self.solve_absorbing_boundary()
-
-        return c, B_new
+    # def calc_profile_concentration(self):
+    #
+    #     self.update_transport_matrix()
+    #     c, B_new = self.solve_absorbing_boundary()
+    #
+    #     return c, B_new
 
     def solve_absorbing_boundary(self):
 
         # reduce transport matrix by cutting row, col corresponding to
         # absorbing boundary
-
         B_new = self.B_eff[self.idx_eff, :]
         B_new = B_new[:, self.idx_eff]
         S = self.circuit.nodes['solute'][self.idx_eff]
 
         concentration = np.zeros(self.N)
+
         # solving inverse flux problem for absorbing boundaries
         concentration_reduced = np.dot(np.linalg.inv(B_new), S)
         concentration[self.idx_eff] = concentration_reduced[:]
@@ -48,14 +48,53 @@ class Overflow(Flux):
 
         return concentration_reduced, B_new
 
-    def update_transport_matrix(self):
+    # def update_transport_matrix(self):
+    #
+    #     A = self.calc_diff_flux(self.circuit.edges['radius_sq'])
+    #     print(self.circuit.edges['radius_sq'])
+    #     k = self.circuit.edges['conductivity']
+    #     s = self.circuit.nodes['source']
+    #     Q = self.calc_flow(k, s)
+    #     r_sq = self.circuit.edges['radius_sq']
+    #     V = self.calc_velocity_from_flowrate(Q, r_sq)
+    #     self.circuit.edges['peclet'] = self.calc_peclet(V)
+    #     self.circuit.edges['flow_rate'] = Q
+    #
+    #     x, z = self.compute_flux_PeAbs()
+    #     idx_pack = self.compute_flux_idx()
+    #
+    #     args = [x, z, idx_pack]
+    #     e_up_sinh_x, e_down_sinh_x, coth_x = self.compute_flux_exp(*args)
+    #
+    #     f1 = np.multiply(z, A)
+    #     f2 = np.multiply(A, np.multiply(x, coth_x))*0.5
+    #     pars = [e_up_sinh_x, e_down_sinh_x]
+    #     f3, f4 = self.calc_abs_jac_coeff_11(0.5*np.multiply(A, x), pars)
+    #
+    #     self.B_eff = np.zeros((self.N, self.N))
+    #
+    #     for i, n in enumerate(self.circuit.list_graph_nodes):
+    #
+    #         b1 = np.multiply(self.B[i, :], f1)
+    #         b2 = np.multiply(np.absolute(self.B[i, :]), f2)
+    #         b12 = np.add(b1, b2)
+    #
+    #         self.B_eff[i, i] = np.sum(b12)
+    #         self.B_eff[i, self.dict_in[n]] = -f3[self.dict_node_in[n]]
+    #         self.B_eff[i, self.dict_out[n]] = -f4[self.dict_node_out[n]]
 
-        A = self.calc_diff_flux(self.circuit.edges['radius_sq'])
+    def update_transport_matrix(self, R):
 
-        k = self.circuit.edges['conductivity']
-        s = self.circuit.nodes['source']
-        Q = self.calc_flow(k, s)
-        r_sq = self.circuit.edges['radius_sq']
+        r_sq = np.power(R, 2)
+        A = self.calc_diff_flux(r_sq)
+
+        self.circuit.edges['radius_sq'] = r_sq
+
+        k = self.circuit.scales['conductance']
+        src = self.circuit.nodes['source']
+        conductivity = self.calc_conductivity_from_cross_section(r_sq, k)
+        Q = self.calc_flow(conductivity, src)
+
         V = self.calc_velocity_from_flowrate(Q, r_sq)
         self.circuit.edges['peclet'] = self.calc_peclet(V)
         self.circuit.edges['flow_rate'] = Q
@@ -68,6 +107,7 @@ class Overflow(Flux):
 
         f1 = np.multiply(z, A)
         f2 = np.multiply(A, np.multiply(x, coth_x))*0.5
+
         pars = [e_up_sinh_x, e_down_sinh_x]
         f3, f4 = self.calc_abs_jac_coeff_11(0.5*np.multiply(A, x), pars)
 

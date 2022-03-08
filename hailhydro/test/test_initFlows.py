@@ -75,20 +75,20 @@ def test_overflowConstructor():
     print('\n test init from graph')
     n=3
     G=nx.grid_graph((n,n,1))
-    F1 = Overflow(G, pars_source=dict(mode='dipole_point'))
+    F1 = Overflow(G, pars_source=dict(modeSRC='dipole_border'))
     print(F1)
     print(F1.circuit)
 
     print('\n test init from on the fly-constructed overflow circuit')
     C = FluxCircuit(G)
-    F2 = Overflow(C)
+    F2 = Overflow(C, pars_source=dict(modeSRC='dipole_border'))
     print(F2)
     # print(F2.circuit.edges)
 
     print('\n test init from prebuild overflow circuit')
     import kirchhoff.circuit_flux as kfc
     K = kfc.initialize_flux_circuit_from_crystal('simple',3)
-    F3 = Overflow(K)
+    F3 = Overflow(K, pars_source=dict(modeSRC='dipole_border'))
     print(F3)
     print(F3.circuit)
 
@@ -99,7 +99,10 @@ def test_overflowConstructor():
 
     for f in [F1, F2, F3]:
 
-        f.calc_profile_concentration()
+        m = len(f.circuit.G.edges())
+        x = np.ones(m)
+        f.update_transport_matrix(x)
+        f.solve_absorbing_boundary()
         f.calc_absorption()
         jac = f.calc_absorption_jacobian()
         print(jac)
@@ -170,7 +173,10 @@ def test_randomOverflow():
 
     for f in [F1, F2, F3]:
 
-        f.calc_profile_concentration()
+        m = len(f.circuit.G.edges())
+        x = np.ones(m)
+        f.update_transport_matrix(x)
+        f.solve_absorbing_boundary()
         f.calc_absorption()
         jac = f.calc_absorption_jacobian()
         print(jac)
