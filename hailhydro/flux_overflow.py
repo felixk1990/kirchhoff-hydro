@@ -31,12 +31,12 @@ class Overflow(Flux):
 
         # reduce transport matrix by cutting row, col corresponding to
         # absorbing boundary
-
         B_new = self.B_eff[self.idx_eff, :]
         B_new = B_new[:, self.idx_eff]
         S = self.circuit.nodes['solute'][self.idx_eff]
 
         concentration = np.zeros(self.N)
+
         # solving inverse flux problem for absorbing boundaries
         concentration_reduced = np.dot(np.linalg.inv(B_new), S)
         concentration[self.idx_eff] = concentration_reduced[:]
@@ -87,6 +87,7 @@ class Overflow(Flux):
 
         r_sq = np.power(R, 2)
         A = self.calc_diff_flux(r_sq)
+
         self.circuit.edges['radius_sq'] = r_sq
 
         k = self.circuit.scales['conductance']
@@ -106,6 +107,7 @@ class Overflow(Flux):
 
         f1 = np.multiply(z, A)
         f2 = np.multiply(A, np.multiply(x, coth_x))*0.5
+
         pars = [e_up_sinh_x, e_down_sinh_x]
         f3, f4 = self.calc_abs_jac_coeff_11(0.5*np.multiply(A, x), pars)
 
