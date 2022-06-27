@@ -86,8 +86,9 @@ class FlowRandom(Flow):
         self.noise = noise
         num_n = len(self.circuit.list_graph_nodes)
         x = np.where(self.circuit.nodes['source'] > 0)[0]
-        idx = np.where(self.circuit.nodes['source'] < 0)[0]
-        N = len(idx)
+        # idx = np.where(self.circuit.nodes['source'] < 0)[0]
+        # N = len(idx)
+        N = num_n - len(x)
         M = len(x)
 
         U = np.zeros((num_n, num_n))
