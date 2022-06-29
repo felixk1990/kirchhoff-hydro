@@ -46,6 +46,7 @@ flux=hfx.initialize_flux_on_circuit(circuit)
 overflow=hro.initialize_overflow_on_circuit(circuit)
 ```
 ./notebook contains examples to play with in the form of jupyter notebooks
+[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/felixk1990/kirchhoff-hydro/HEAD)
 ##  Requirements
 ``` pandas ```,``` networkx ```, ``` numpy ```,```plotly```, ```kirchhoff```
 
