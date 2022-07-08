@@ -14,7 +14,106 @@ from dataclasses import dataclass, field
 
 @dataclass
 class Flux(Flow):
+    """
+    The flux class defines variables and methods for computing Hagen-Poiseuille
+    flows on kirchhoff networks. Furthermore it enables to compute simple,
+    stationary advection-diffusion+absorption problems and concentration
+    landscapes.
 
+    To be used in conjunction with 'kirchhoff' and 'goflow' in order to
+    simulate flow-driven network morphogenesis.
+
+    Attributes:
+        constr (networkx.Graph):\n
+            A networkx graph or circuit to initilize a flow on.
+        pars_source (dict):\n
+            The boundary conditions (Neumann) determining the in/outlfow of
+            fluid accross the network.
+        pars_plexus (dict):\n
+            The initial plexus, edge values of  conductivity, the flow is to
+            be calculated on.
+
+        pars_solute (dict):\n
+            The initial plexus, edge values of  conductivity, the flow is to
+            be calculated on.
+        pars_abs (dict):\n
+            The initial plexus, edge values of  conductivity, the flow is to
+            be calculated on.
+        pars_geom (dict):\n
+            The initial plexus, edge values of  conductivity, the flow is to
+            be calculated on.
+
+        dict_in (dict):\n
+            The initial plexus, edge values of  conductivity, the flow is to
+            be calculated on.
+        dict_out (dict):\n
+            The initial plexus, edge values of  conductivity, the flow is to
+            be calculated on.
+        dict_edges (dict):\n
+            The initial plexus, edge values of  conductivity, the flow is to
+            be calculated on.
+
+        dict_node_out (dict):\n
+            The initial plexus, edge values of  conductivity, the flow is to
+            be calculated on.
+        dict_node_in (dict):\n
+            The initial plexus, edge values of  conductivity, the flow is to
+            be calculated on.
+
+    Methods:
+        init_flow():\n
+            Initialize flow variables, boundaries and handle constructor
+            exceptions.
+        set_boundaries():\n
+            Explicitly set Neumann-boudaries and initial plexus as defined via
+            'pars_source/plexus' parameters. Set internal output varaibles and
+            incidence information.
+        find_roots(G):\n
+            Given a networkx graph, return all source-nodes (needs the nodal
+            'source' attribute set).
+        find_sinks(G):\n
+            Given a networkx graph, return all sink-nodes (needs the nodal
+            'source' attribute set).
+        alpha_omega(G, j):\n
+            Return the start (alpha) and end(omega) node of an edge, for any
+            given networkx graph with edge labeling j.
+        calc_pressure(conduct, source):\n
+            Compute the pressure landscape, considering the current parameter
+            and plexus condition.
+        calc_flow_from_pressure(conduct, dP):\n
+            Compute the flow landscape, considering the current parameter
+            and plexus condition.
+        calc_flow(conduct, source):\n
+            Compute the flow landscape, considering the current parameter
+            and plexus condition.
+        calc_sq_flow(sconduct, source):\n
+            Compute the squared pressure/flow landscape, considering the
+            current parameter and plexus condition.
+        calc_cross_section_from_conductivity(conductivity, conductance):\n
+            Compute the squared radii values from the current conductivity
+            matrix and conductance value.
+        calc_conductivity_from_cross_section(R_sq, conductance):\n
+            Compute the conductivity matrix from the current squared radii
+            values and conductance value.
+        calc_configuration_flow():\n
+            Compute the pressure/flow landscape, considering the current
+            parameter and plexus condition.
+        init_flux():\n
+            Initialize internal flux variables, boundaries and handle
+            constructor exceptions.
+        init_parameters():\n
+            Initialize internal variables and containers.
+        set_solute_boundaries():\n
+            Set flux parameters and boundaries.
+        calc_diff_flux(R_sq):\n
+            Compute the reweighted cross-section given an advection-diffusion
+            problem.
+        calc_velocity_from_flowrate(Q, R_sq):\n
+            Compute the effective flow velocities.
+        calc_peclet(V):\n
+            Compute the Peclet numbers.
+
+    """
     # incidence correlation
     defVal1 = dict(
         default_factory=dict,
@@ -43,6 +142,16 @@ class Flux(Flow):
         self.init_flux()
 
     def init_flux(self):
+        """
+        Initialize internal flux variables, boundaries and handle constructor
+        exceptions.
+
+        Raises:
+            Exception:\n
+                Warning! Non-networkx type given for initialization, no
+                internal circuit established.
+
+        """
 
         if type(self.constr) == nx.Graph:
 
@@ -69,6 +178,11 @@ class Flux(Flow):
         self.init_parameters()
 
     def init_parameters(self):
+
+        """
+        Initialize internal variables and containers.
+
+        """
 
         diff = self.circuit.scales['diffusion']
         L = self.circuit.scales['length']
@@ -113,6 +227,10 @@ class Flux(Flow):
                 print('and I say...whats going on? I say heyayayayayaaaaa...')
 
     def set_solute_boundaries(self):
+        """
+        Set flux parameters and boundaries.
+
+        """
 
         par1 = self.circuit.graph['solute_mode']
         par2 = self.circuit.graph['absorption_mode']
@@ -130,18 +248,53 @@ class Flux(Flow):
 
     def calc_diff_flux(self, R_sq):
 
+        """
+        Compute the reweighted cross-section given an advection-diffusion
+        problem.
+
+        Args:
+            R_sq (array):\n
+                The squared edge radii values.
+
+        Returns:
+            ndarray:\n
+             Edge-vector of effective diffusion flux across the cross-section.
+
+        """
         A = np.pi*R_sq*self.ref_vars
 
         return A
 
     def calc_velocity_from_flowrate(self, Q, R_sq):
+        """
+        Compute the effective flow velocities.
 
+        Args:
+            Q (array):\n
+                Edge-vector of directed flow rates.
+            R_sq (array):\n
+                The squared edge radii values.
+
+        Returns:
+            ndarray: Edge-vector of cross-section averaged flow velocities.
+
+        """
         V = np.divide(Q, R_sq*np.pi)
 
         return V
 
     def calc_peclet(self, V):
+        """
+        Compute the Peclet numbers.
 
+        Args:
+            V (array):\n
+                Edge-vector of cross-section averaged flow velocities.
+
+        Returns:
+            ndarray: Edge-vector of peclet numbers.
+
+        """
         PE = V/self.ref_vars
 
         return PE

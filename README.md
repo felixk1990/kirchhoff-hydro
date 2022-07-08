@@ -1,11 +1,13 @@
 # hailhydro
+A module for computation of Hagen-Poiseuille flows and Advection-Diffusion+Absorption landscapes on Kirchhoff networks. For further documentation see: <https://felixk1990.github.io/kirchhoff-hydro/>
 ##  Introduction
-This module 'hailhydro' is part of a series of pyton packages encompassing a set of class and method implementations for a kirchhoff network datatype, in order to to calculate flow/flux on lumped parameter model circuits. The flow/flux objects are embedded in the kirchhoff networks, and can be altered independently from the underlying graph structure. This is meant for fast(er) and efficient computation in the follow-up module 'goflow' and dependend of 'kirchhoff'.
+The module 'hailhydro' is part of a series of pyton packages encompassing a set of class and method implementations for a kirchhoff network datatype, in order to to calculate flow/flux on lumped parameter model circuits. The flow/flux objects are embedded in the kirchhoff networks, and can be altered independently from the underlying graph structure. This is meant for fast(er) and efficient computation in the follow-up module 'goflow' and dependend of 'kirchhoff'.
 
 
 ##  Installation
+```
 pip install hailhydro
-
+```
 ##  Usage
 
 Generally, just take a weighted networkx graph and create a kirchhoff circuit from it (giving it a defined spatialy embedding and conductivity structure)
@@ -31,7 +33,7 @@ circuit2.set_source_landscape('root_multi',num_sources=1)
 circuit2.set_plexus_landscape()
 rerouting_flow=hfr.initialize_rerouting_flow_on_circuit(circuit2)
 ```
-Furter, extra classes for flux of solute along a kirchhoff network are implemented (use hailhydro.flux_overflow to handle critical regimes of large Peclet numbers) 
+Furter, extra classes for flux of solute along a kirchhoff network are implemented (use hailhydro.flux_overflow to handle critical regimes of large Peclet numbers)
 ```
 import hailhydro.flux_init as hfx
 import kirchhoff.circuit_flux as kfx
@@ -45,10 +47,10 @@ circuit=kfx.setup_default_flux_circuit(pars)
 flux=hfx.initialize_flux_on_circuit(circuit)
 overflow=hro.initialize_overflow_on_circuit(circuit)
 ```
-./notebook contains examples to play with in the form of jupyter notebooks
+Further examples and recipes can be found here:
 [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/felixk1990/kirchhoff-hydro/HEAD)
 ##  Requirements
-``` 
+```
 networkx==2.5
 numpy==1.19.1
 scipy==1.5.2
