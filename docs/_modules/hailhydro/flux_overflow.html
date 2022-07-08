@@ -1,0 +1,974 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>hailhydro.flux_overflow &#8212; kirchhoff-hydro  documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/classic.css" />
+    
+    <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+    <script src="../../_static/jquery.js"></script>
+    <script src="../../_static/underscore.js"></script>
+    <script src="../../_static/doctools.js"></script>
+    
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">kirchhoff-hydro  documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../index.html" accesskey="U">Module code</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">hailhydro.flux_overflow</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for hailhydro.flux_overflow</h1><div class="highlight"><pre>
+<span></span><span class="c1"># @Author: Felix Kramer &lt;kramer&gt;</span>
+<span class="c1"># @Date:   08-03-2022</span>
+<span class="c1"># @Email:  felixuwekramer@proton.me</span>
+<span class="c1"># @Last modified by:   kramer</span>
+<span class="c1"># @Last modified time: 08-07-2022</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">scipy.linalg</span> <span class="k">as</span> <span class="nn">lina</span>
+<span class="kn">from</span> <span class="nn">hailhydro.flux_init</span> <span class="kn">import</span> <span class="n">Flux</span>
+<span class="kn">from</span> <span class="nn">dataclasses</span> <span class="kn">import</span> <span class="n">dataclass</span>
+
+
+<div class="viewcode-block" id="Overflow"><a class="viewcode-back" href="../../hailhydro.html#hailhydro.flux_overflow.Overflow">[docs]</a><span class="nd">@dataclass</span>
+<span class="k">class</span> <span class="nc">Overflow</span><span class="p">(</span><span class="n">Flux</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    The flux class defines variables and methods for computing Hagen-Poiseuille</span>
+<span class="sd">    flows on kirchhoff networks. Furthermore it enables to compute simple,</span>
+<span class="sd">    stationary advection-diffusion+absorption problems and concentration</span>
+<span class="sd">    landscapes.</span>
+
+<span class="sd">    To be used in conjunction with &#39;kirchhoff&#39; and &#39;goflow&#39; in order to</span>
+<span class="sd">    simulate flow-driven network morphogenesis. This class contains manually</span>
+<span class="sd">    implemented handling for large Peclet numbers.</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        constr (networkx.Graph):\n</span>
+<span class="sd">            A networkx graph or circuit to initilize a flow on.</span>
+<span class="sd">        pars_source (dict):\n</span>
+<span class="sd">            The boundary conditions (Neumann) determining the in/outlfow of</span>
+<span class="sd">            fluid accross the network.</span>
+<span class="sd">        pars_plexus (dict):\n</span>
+<span class="sd">            The initial plexus, edge values of  conductivity, the flow is to</span>
+<span class="sd">            be calculated on.</span>
+
+<span class="sd">        pars_solute (dict):\n</span>
+<span class="sd">            The initial plexus, edge values of  conductivity, the flow is to</span>
+<span class="sd">            be calculated on.</span>
+<span class="sd">        pars_abs (dict):\n</span>
+<span class="sd">            The initial plexus, edge values of  conductivity, the flow is to</span>
+<span class="sd">            be calculated on.</span>
+<span class="sd">        pars_geom (dict):\n</span>
+<span class="sd">            The initial plexus, edge values of  conductivity, the flow is to</span>
+<span class="sd">            be calculated on.</span>
+
+<span class="sd">        dict_in (dict):\n</span>
+<span class="sd">            The initial plexus, edge values of  conductivity, the flow is to</span>
+<span class="sd">            be calculated on.</span>
+<span class="sd">        dict_out (dict):\n</span>
+<span class="sd">            The initial plexus, edge values of  conductivity, the flow is to</span>
+<span class="sd">            be calculated on.</span>
+<span class="sd">        dict_edges (dict):\n</span>
+<span class="sd">            The initial plexus, edge values of  conductivity, the flow is to</span>
+<span class="sd">            be calculated on.</span>
+
+<span class="sd">        dict_node_out (dict):\n</span>
+<span class="sd">            The initial plexus, edge values of  conductivity, the flow is to</span>
+<span class="sd">            be calculated on.</span>
+<span class="sd">        dict_node_in (dict):\n</span>
+<span class="sd">            The initial plexus, edge values of  conductivity, the flow is to</span>
+<span class="sd">            be calculated on.</span>
+
+<span class="sd">    Methods:</span>
+<span class="sd">        init_flow():\n</span>
+<span class="sd">            Initialize flow variables, boundaries and handle constructor</span>
+<span class="sd">            exceptions.</span>
+<span class="sd">        set_boundaries():\n</span>
+<span class="sd">            Explicitly set Neumann-boudaries and initial plexus as defined via</span>
+<span class="sd">            &#39;pars_source/plexus&#39; parameters. Set internal output varaibles and</span>
+<span class="sd">            incidence information.</span>
+<span class="sd">        find_roots(G):\n</span>
+<span class="sd">            Given a networkx graph, return all source-nodes (needs the nodal</span>
+<span class="sd">            &#39;source&#39; attribute set).</span>
+<span class="sd">        find_sinks(G):\n</span>
+<span class="sd">            Given a networkx graph, return all sink-nodes (needs the nodal</span>
+<span class="sd">            &#39;source&#39; attribute set).</span>
+<span class="sd">        alpha_omega(G, j):\n</span>
+<span class="sd">            Return the start (alpha) and end(omega) node of an edge, for any</span>
+<span class="sd">            given networkx graph with edge labeling j.</span>
+<span class="sd">        calc_pressure(conduct, source):\n</span>
+<span class="sd">            Compute the pressure landscape, considering the current parameter</span>
+<span class="sd">            and plexus condition.</span>
+<span class="sd">        calc_flow_from_pressure(conduct, dP):\n</span>
+<span class="sd">            Compute the flow landscape, considering the current parameter</span>
+<span class="sd">            and plexus condition.</span>
+<span class="sd">        calc_flow(conduct, source):\n</span>
+<span class="sd">            Compute the flow landscape, considering the current parameter</span>
+<span class="sd">            and plexus condition.</span>
+<span class="sd">        calc_sq_flow(sconduct, source):\n</span>
+<span class="sd">            Compute the squared pressure/flow landscape, considering the</span>
+<span class="sd">            current parameter and plexus condition.</span>
+<span class="sd">        calc_cross_section_from_conductivity(conductivity, conductance):\n</span>
+<span class="sd">            Compute the squared radii values from the current conductivity</span>
+<span class="sd">            matrix and conductance value.</span>
+<span class="sd">        calc_conductivity_from_cross_section(R_sq, conductance):\n</span>
+<span class="sd">            Compute the conductivity matrix from the current squared radii</span>
+<span class="sd">            values and conductance value.</span>
+<span class="sd">        calc_configuration_flow():\n</span>
+<span class="sd">            Compute the pressure/flow landscape, considering the current</span>
+<span class="sd">            parameter and plexus condition.</span>
+<span class="sd">        init_flux():\n</span>
+<span class="sd">            Initialize internal flux variables, boundaries and handle</span>
+<span class="sd">            constructor exceptions.</span>
+<span class="sd">        init_parameters():\n</span>
+<span class="sd">            Initialize internal variables and containers.</span>
+<span class="sd">        set_solute_boundaries():\n</span>
+<span class="sd">            Set flux parameters and boundaries.</span>
+<span class="sd">        calc_diff_flux(R_sq):\n</span>
+<span class="sd">            Compute the reweighted cross-section given an advection-diffusion</span>
+<span class="sd">            problem.</span>
+<span class="sd">        calc_velocity_from_flowrate(Q, R_sq):\n</span>
+<span class="sd">            Compute the effective flow velocities.</span>
+<span class="sd">        calc_peclet(V):\n</span>
+<span class="sd">            Compute the Peclet numbers.</span>
+<span class="sd">        solve_absorbing_boundary():\n</span>
+<span class="sd">            Compute the concentration landscape for the absorbing boundary</span>
+<span class="sd">            problem.</span>
+<span class="sd">        update_transport_matrix(R):\n</span>
+<span class="sd">            Update the effective transport matrix.</span>
+<span class="sd">        compute_flux_PeAbs():\n</span>
+<span class="sd">            Compute the effective exponential factors for the stationary</span>
+<span class="sd">            concentraiton problem.</span>
+<span class="sd">        compute_flux_idx():\n</span>
+<span class="sd">            Identify regimes of Peclet numbers and the respective indices of</span>
+<span class="sd">            edges.</span>
+<span class="sd">        compute_flux_exp(x, z, idx_pack):\n</span>
+<span class="sd">            Computes auxillary exponential factors for transport matrix</span>
+<span class="sd">            evaluation.</span>
+<span class="sd">        calc_absorption():\n</span>
+<span class="sd">            Computes total absorption lanscape of the advection-diffusion</span>
+<span class="sd">            network.</span>
+<span class="sd">        get_concentrations_from_edges():\n</span>
+<span class="sd">            Returns the current start and end concentraiton values of each</span>
+<span class="sd">            individual edge.</span>
+<span class="sd">        calc_absorption_jacobian():\n</span>
+<span class="sd">            Compute total edge&#39;s absorption Jacobian matrix (with regard to</span>
+<span class="sd">            radial changes).</span>
+<span class="sd">        get_alpha_omega_from_edges():\n</span>
+<span class="sd">            Returns the start(alpha) and end(omega) node of all network edges.</span>
+<span class="sd">        calc_absorption_jacobian_coefficients_1(*args):\n</span>
+<span class="sd">            Caluclation of intermediate transport matrix and Jacobain</span>
+<span class="sd">            components.</span>
+<span class="sd">        calc_abs_jac_coeff_11(x, pars):\n</span>
+<span class="sd">            Auxillarycilary function for sequenced ndarray multiplication.</span>
+<span class="sd">        calc_absorption_jacobian_coefficients_2(*args):\n</span>
+<span class="sd">            Caluclation of intermediate transport matrix and Jacobain</span>
+<span class="sd">            omponents.</span>
+<span class="sd">        calc_flux_jacobian():\n</span>
+<span class="sd">            Compute the flow components of the absorption Jacobian matrix.</span>
+<span class="sd">        calc_cross_section_jacobian():\n</span>
+<span class="sd">            Compute the radial Jacobian component of the absorption Jacobian</span>
+<span class="sd">            matrix.</span>
+<span class="sd">        calc_concentration_jacobian(J_PE, c):\n</span>
+<span class="sd">            Compute the concentration Jacobian component of the absorption</span>
+<span class="sd">            Jacobian matrix.</span>
+<span class="sd">        calc_concentration_jacobian_coefficients(c):\n</span>
+<span class="sd">            Auxillary function to compute intermediate coefficients for</span>
+<span class="sd">            concentration Jacobian matrix evaluation.</span>
+<span class="sd">        flux_sum_1(i, z, f2):\n</span>
+<span class="sd">            Auxillary function for intermediate coefficient computation.</span>
+<span class="sd">        flux_sum_2(i, z, A, f4):\n</span>
+<span class="sd">            Auxillary function for intermediate coefficient computation.</span>
+<span class="sd">        calc_inv_B(c):\n</span>
+<span class="sd">            Return the reduced concentration vector and inverted transport</span>
+<span class="sd">            matrix.</span>
+<span class="sd">        calc_inc_jac_diag(flux_sum_1, flux_sum_2, pars):\n</span>
+<span class="sd">            Auxillary function to compute intermediate Jacobian components for</span>
+<span class="sd">            absoprtion Jacobian matrix.</span>
+<span class="sd">        calc_incidence_jacobian_dev(JB_eff, dict_coeff, pars):\n</span>
+<span class="sd">            Auxillary function to merge intermediate Jacobian components into</span>
+<span class="sd">            effective absoprtion Jacobian matrix.</span>
+<span class="sd">        evaluate_jacobian(j, J_C, JB_eff, inv_B, c):\n</span>
+<span class="sd">            Update the jth row of the current concentration Jacobian matrix.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__post_init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">init_flux</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">crit_pe</span> <span class="o">=</span> <span class="mf">50.</span>
+
+    <span class="c1"># compute concentration profile</span>
+    <span class="c1"># def calc_profile_concentration(self):</span>
+    <span class="c1">#</span>
+    <span class="c1">#     self.update_transport_matrix()</span>
+    <span class="c1">#     c, B_new = self.solve_absorbing_boundary()</span>
+    <span class="c1">#</span>
+    <span class="c1">#     return c, B_new</span>
+
+<div class="viewcode-block" id="Overflow.solve_absorbing_boundary"><a class="viewcode-back" href="../../hailhydro.html#hailhydro.flux_overflow.Overflow.solve_absorbing_boundary">[docs]</a>    <span class="k">def</span> <span class="nf">solve_absorbing_boundary</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Compute the concentration landscape for the absorbing boundary problem.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            ndarray: The reduced concentraiton vector</span>
+<span class="sd">            ndarray: The reduced transport matrix</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># reduce transport matrix by cutting row, col corresponding to</span>
+        <span class="c1"># absorbing boundary</span>
+        <span class="n">B_new</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">B_eff</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">idx_eff</span><span class="p">,</span> <span class="p">:]</span>
+        <span class="n">B_new</span> <span class="o">=</span> <span class="n">B_new</span><span class="p">[:,</span> <span class="bp">self</span><span class="o">.</span><span class="n">idx_eff</span><span class="p">]</span>
+        <span class="n">S</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">circuit</span><span class="o">.</span><span class="n">nodes</span><span class="p">[</span><span class="s1">&#39;solute&#39;</span><span class="p">][</span><span class="bp">self</span><span class="o">.</span><span class="n">idx_eff</span><span class="p">]</span>
+
+        <span class="n">concentration</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">N</span><span class="p">)</span>
+
+        <span class="c1"># solving inverse flux problem for absorbing boundaries</span>
+        <span class="n">concentration_reduced</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">inv</span><span class="p">(</span><span class="n">B_new</span><span class="p">),</span> <span class="n">S</span><span class="p">)</span>
+        <span class="n">concentration</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">idx_eff</span><span class="p">]</span> <span class="o">=</span> <span class="n">concentration_reduced</span><span class="p">[:]</span>
+
+        <span class="c1"># export solution</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">n</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">circuit</span><span class="o">.</span><span class="n">list_graph_nodes</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">circuit</span><span class="o">.</span><span class="n">G</span><span class="o">.</span><span class="n">nodes</span><span class="p">[</span><span class="n">n</span><span class="p">][</span><span class="s1">&#39;concentrations&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">concentration</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">circuit</span><span class="o">.</span><span class="n">nodes</span><span class="p">[</span><span class="s1">&#39;concentration&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">concentration</span><span class="p">[:]</span>
+
+        <span class="k">return</span> <span class="n">concentration_reduced</span><span class="p">,</span> <span class="n">B_new</span></div>
+
+    <span class="c1"># def update_transport_matrix(self):</span>
+    <span class="c1">#</span>
+    <span class="c1">#     A = self.calc_diff_flux(self.circuit.edges[&#39;radius_sq&#39;])</span>
+    <span class="c1">#     print(self.circuit.edges[&#39;radius_sq&#39;])</span>
+    <span class="c1">#     k = self.circuit.edges[&#39;conductivity&#39;]</span>
+    <span class="c1">#     s = self.circuit.nodes[&#39;source&#39;]</span>
+    <span class="c1">#     Q = self.calc_flow(k, s)</span>
+    <span class="c1">#     r_sq = self.circuit.edges[&#39;radius_sq&#39;]</span>
+    <span class="c1">#     V = self.calc_velocity_from_flowrate(Q, r_sq)</span>
+    <span class="c1">#     self.circuit.edges[&#39;peclet&#39;] = self.calc_peclet(V)</span>
+    <span class="c1">#     self.circuit.edges[&#39;flow_rate&#39;] = Q</span>
+    <span class="c1">#</span>
+    <span class="c1">#     x, z = self.compute_flux_PeAbs()</span>
+    <span class="c1">#     idx_pack = self.compute_flux_idx()</span>
+    <span class="c1">#</span>
+    <span class="c1">#     args = [x, z, idx_pack]</span>
+    <span class="c1">#     e_up_sinh_x, e_down_sinh_x, coth_x = self.compute_flux_exp(*args)</span>
+    <span class="c1">#</span>
+    <span class="c1">#     f1 = np.multiply(z, A)</span>
+    <span class="c1">#     f2 = np.multiply(A, np.multiply(x, coth_x))*0.5</span>
+    <span class="c1">#     pars = [e_up_sinh_x, e_down_sinh_x]</span>
+    <span class="c1">#     f3, f4 = self.calc_abs_jac_coeff_11(0.5*np.multiply(A, x), pars)</span>
+    <span class="c1">#</span>
+    <span class="c1">#     self.B_eff = np.zeros((self.N, self.N))</span>
+    <span class="c1">#</span>
+    <span class="c1">#     for i, n in enumerate(self.circuit.list_graph_nodes):</span>
+    <span class="c1">#</span>
+    <span class="c1">#         b1 = np.multiply(self.B[i, :], f1)</span>
+    <span class="c1">#         b2 = np.multiply(np.absolute(self.B[i, :]), f2)</span>
+    <span class="c1">#         b12 = np.add(b1, b2)</span>
+    <span class="c1">#</span>
+    <span class="c1">#         self.B_eff[i, i] = np.sum(b12)</span>
+    <span class="c1">#         self.B_eff[i, self.dict_in[n]] = -f3[self.dict_node_in[n]]</span>
+    <span class="c1">#         self.B_eff[i, self.dict_out[n]] = -f4[self.dict_node_out[n]]</span>
+
+<div class="viewcode-block" id="Overflow.update_transport_matrix"><a class="viewcode-back" href="../../hailhydro.html#hailhydro.flux_overflow.Overflow.update_transport_matrix">[docs]</a>    <span class="k">def</span> <span class="nf">update_transport_matrix</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">R</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Update the effective transport matrix.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            R (array):\n</span>
+<span class="sd">                The current edge radii distribution.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">r_sq</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">power</span><span class="p">(</span><span class="n">R</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+        <span class="n">A</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">calc_diff_flux</span><span class="p">(</span><span class="n">r_sq</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">circuit</span><span class="o">.</span><span class="n">edges</span><span class="p">[</span><span class="s1">&#39;radius_sq&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">r_sq</span>
+
+        <span class="n">k</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">circuit</span><span class="o">.</span><span class="n">scales</span><span class="p">[</span><span class="s1">&#39;conductance&#39;</span><span class="p">]</span>
+        <span class="n">src</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">circuit</span><span class="o">.</span><span class="n">nodes</span><span class="p">[</span><span class="s1">&#39;source&#39;</span><span class="p">]</span>
+        <span class="n">conductivity</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">calc_conductivity_from_cross_section</span><span class="p">(</span><span class="n">r_sq</span><span class="p">,</span> <span class="n">k</span><span class="p">)</span>
+        <span class="n">Q</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">calc_flow</span><span class="p">(</span><span class="n">conductivity</span><span class="p">,</span> <span class="n">src</span><span class="p">)</span>
+
+        <span class="n">V</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">calc_velocity_from_flowrate</span><span class="p">(</span><span class="n">Q</span><span class="p">,</span> <span class="n">r_sq</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">circuit</span><span class="o">.</span><span class="n">edges</span><span class="p">[</span><span class="s1">&#39;peclet&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">calc_peclet</span><span class="p">(</span><span class="n">V</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">circuit</span><span class="o">.</span><span class="n">edges</span><span class="p">[</span><span class="s1">&#39;flow_rate&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">Q</span>
+
+        <span class="n">x</span><span class="p">,</span> <span class="n">z</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">compute_flux_PeAbs</span><span class="p">()</span>
+        <span class="n">idx_pack</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">compute_flux_idx</span><span class="p">()</span>
+
+        <span class="n">args</span> <span class="o">=</span> <span class="p">[</span><span class="n">x</span><span class="p">,</span> <span class="n">z</span><span class="p">,</span> <span class="n">idx_pack</span><span class="p">]</span>
+        <span class="n">e_up_sinh_x</span><span class="p">,</span> <span class="n">e_down_sinh_x</span><span class="p">,</span> <span class="n">coth_x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">compute_flux_exp</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">)</span>
+
+        <span class="n">f1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">multiply</span><span class="p">(</span><span class="n">z</span><span class="p">,</span> <span class="n">A</span><span class="p">)</span>
+        <span class="n">f2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">multiply</span><span class="p">(</span><span class="n">A</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">multiply</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">coth_x</span><span class="p">))</span><span class="o">*</span><span class="mf">0.5</span>
+
+        <span class="n">pars</span> <span class="o">=</span> <span class="p">[</span><span class="n">e_up_sinh_x</span><span class="p">,</span> <span class="n">e_down_sinh_x</span><span class="p">]</span>
+        <span class="n">f3</span><span class="p">,</span> <span class="n">f4</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">calc_abs_jac_coeff_11</span><span class="p">(</span><span class="mf">0.5</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">multiply</span><span class="p">(</span><span class="n">A</span><span class="p">,</span> <span class="n">x</span><span class="p">),</span> <span class="n">pars</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">B_eff</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">N</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">N</span><span class="p">))</span>
+
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">n</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">circuit</span><span class="o">.</span><span class="n">list_graph_nodes</span><span class="p">):</span>
+
+            <span class="n">b1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">multiply</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">B</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="p">:],</span> <span class="n">f1</span><span class="p">)</span>
+            <span class="n">b2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">multiply</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">absolute</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">B</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="p">:]),</span> <span class="n">f2</span><span class="p">)</span>
+            <span class="n">b12</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">b1</span><span class="p">,</span> <span class="n">b2</span><span class="p">)</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">B_eff</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">b12</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">B_eff</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">dict_in</span><span class="p">[</span><span class="n">n</span><span class="p">]]</span> <span class="o">=</span> <span class="o">-</span><span class="n">f3</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">dict_node_in</span><span class="p">[</span><span class="n">n</span><span class="p">]]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">B_eff</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">dict_out</span><span class="p">[</span><span class="n">n</span><span class="p">]]</span> <span class="o">=</span> <span class="o">-</span><span class="n">f4</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">dict_node_out</span><span class="p">[</span><span class="n">n</span><span class="p">]]</span></div>
+
+<div class="viewcode-block" id="Overflow.compute_flux_PeAbs"><a class="viewcode-back" href="../../hailhydro.html#hailhydro.flux_overflow.Overflow.compute_flux_PeAbs">[docs]</a>    <span class="k">def</span> <span class="nf">compute_flux_PeAbs</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Compute the effective exponential factors for the stationary</span>
+<span class="sd">        concentraiton problem.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            ndarray: Edge-vector of effective exponents.</span>
+<span class="sd">            ndarray: Edge-vector of Peclet numbers*0.5.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">pe</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">circuit</span><span class="o">.</span><span class="n">edges</span><span class="p">[</span><span class="s1">&#39;peclet&#39;</span><span class="p">]</span>
+        <span class="n">beta</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">circuit</span><span class="o">.</span><span class="n">edges</span><span class="p">[</span><span class="s1">&#39;absorption&#39;</span><span class="p">]</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">power</span><span class="p">(</span><span class="n">pe</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span> <span class="n">beta</span><span class="p">))</span>
+        <span class="n">z</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">circuit</span><span class="o">.</span><span class="n">edges</span><span class="p">[</span><span class="s1">&#39;peclet&#39;</span><span class="p">]</span><span class="o">*</span><span class="mf">0.5</span>
+
+        <span class="k">return</span> <span class="n">x</span><span class="p">,</span> <span class="n">z</span></div>
+
+<div class="viewcode-block" id="Overflow.compute_flux_idx"><a class="viewcode-back" href="../../hailhydro.html#hailhydro.flux_overflow.Overflow.compute_flux_idx">[docs]</a>    <span class="k">def</span> <span class="nf">compute_flux_idx</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Identify regimes of Peclet numbers and the respective indices of edges.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            list:\n</span>
+<span class="sd">                List of index sets, for handling limit cases for Peclet number</span>
+<span class="sd">                regimes.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="c1"># establish the use of converging limit expressions to prevent</span>
+        <span class="c1"># overflow error</span>
+        <span class="n">pe</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">circuit</span><span class="o">.</span><span class="n">edges</span><span class="p">[</span><span class="s1">&#39;peclet&#39;</span><span class="p">]</span>
+        <span class="n">idx_lower</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">absolute</span><span class="p">(</span><span class="n">pe</span><span class="p">)</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">crit_pe</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">idx_over_p</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">((</span><span class="n">np</span><span class="o">.</span><span class="n">absolute</span><span class="p">(</span><span class="n">pe</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">crit_pe</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">pe</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">))[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">idx_over_n</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">((</span><span class="n">np</span><span class="o">.</span><span class="n">absolute</span><span class="p">(</span><span class="n">pe</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">crit_pe</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">pe</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">))[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">idx_pack</span> <span class="o">=</span> <span class="p">[</span><span class="nb">list</span><span class="p">(</span><span class="n">idx_lower</span><span class="p">),</span> <span class="nb">list</span><span class="p">(</span><span class="n">idx_over_p</span><span class="p">),</span> <span class="nb">list</span><span class="p">(</span><span class="n">idx_over_n</span><span class="p">)]</span>
+
+        <span class="k">return</span> <span class="n">idx_pack</span></div>
+
+<div class="viewcode-block" id="Overflow.compute_flux_exp"><a class="viewcode-back" href="../../hailhydro.html#hailhydro.flux_overflow.Overflow.compute_flux_exp">[docs]</a>    <span class="k">def</span> <span class="nf">compute_flux_exp</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">z</span><span class="p">,</span> <span class="n">idx_pack</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Computes auxillary exponential factors for transport matrix evaluation.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            x (array):\n</span>
+<span class="sd">                Edge-vector of effective exponents.</span>
+<span class="sd">            z (array):\n</span>
+<span class="sd">                Edge-vector of Peclet numbers*0.5.</span>
+<span class="sd">            idx_pack (list):\n</span>
+<span class="sd">                List of index sets, for handling limit cases for Peclet number</span>
+<span class="sd">                regimes.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            ndarray: Edge-vector of exponential parameters (UP)</span>
+<span class="sd">            ndarray: Edge-vector of exponential parameters (DOWN)</span>
+<span class="sd">            ndarray: Edge-vector of exponential parameters (COTH)</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">e_up_sinh_x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">M</span><span class="p">)</span>
+        <span class="n">e_down_sinh_x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">M</span><span class="p">)</span>
+        <span class="n">coth_x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">M</span><span class="p">)</span>
+
+        <span class="c1"># subcritical pe</span>
+        <span class="n">idx_lower</span> <span class="o">=</span> <span class="n">idx_pack</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">e_up</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">z</span><span class="p">[</span><span class="n">idx_lower</span><span class="p">])</span>
+        <span class="n">e_down</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="n">z</span><span class="p">[</span><span class="n">idx_lower</span><span class="p">])</span>
+        <span class="n">e_up_sinh_x</span><span class="p">[</span><span class="n">idx_lower</span><span class="p">]</span> <span class="o">=</span> <span class="n">e_up</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">sinh</span><span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="n">idx_lower</span><span class="p">]</span><span class="o">*</span><span class="mf">0.5</span><span class="p">)</span>
+        <span class="n">e_down_sinh_x</span><span class="p">[</span><span class="n">idx_lower</span><span class="p">]</span> <span class="o">=</span> <span class="n">e_down</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">sinh</span><span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="n">idx_lower</span><span class="p">]</span><span class="o">*</span><span class="mf">0.5</span><span class="p">)</span>
+        <span class="n">coth_x</span><span class="p">[</span><span class="n">idx_lower</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">reciprocal</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">tanh</span><span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="n">idx_lower</span><span class="p">]</span><span class="o">*</span><span class="mf">0.5</span><span class="p">))</span>
+
+        <span class="c1"># overcriticial,  pe positive</span>
+        <span class="n">idx_over_pos</span> <span class="o">=</span> <span class="n">idx_pack</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">e_up_sinh_x</span><span class="p">[</span><span class="n">idx_over_pos</span><span class="p">]</span> <span class="o">=</span> <span class="mf">2.</span>
+        <span class="n">e_down_sinh_x</span><span class="p">[</span><span class="n">idx_over_pos</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.</span>
+        <span class="n">coth_x</span><span class="p">[</span><span class="n">idx_over_pos</span><span class="p">]</span> <span class="o">=</span> <span class="mf">1.</span>
+
+        <span class="c1"># overcriticial,  pe negative</span>
+        <span class="n">idx_over_neg</span> <span class="o">=</span> <span class="n">idx_pack</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
+        <span class="n">e_up_sinh_x</span><span class="p">[</span><span class="n">idx_over_neg</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.</span>
+        <span class="n">e_down_sinh_x</span><span class="p">[</span><span class="n">idx_over_neg</span><span class="p">]</span> <span class="o">=</span> <span class="mf">2.</span>
+        <span class="n">coth_x</span><span class="p">[</span><span class="n">idx_over_neg</span><span class="p">]</span> <span class="o">=</span> <span class="mf">1.</span>
+
+        <span class="k">return</span> <span class="n">e_up_sinh_x</span><span class="p">,</span> <span class="n">e_down_sinh_x</span><span class="p">,</span> <span class="n">coth_x</span></div>
+
+    <span class="c1"># calc link absorption</span>
+<div class="viewcode-block" id="Overflow.calc_absorption"><a class="viewcode-back" href="../../hailhydro.html#hailhydro.flux_overflow.Overflow.calc_absorption">[docs]</a>    <span class="k">def</span> <span class="nf">calc_absorption</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Computes total absorption lanscape of the advection-diffusion network.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            ndarray: Edge-vector of total absorption rates.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="c1"># calc coefficients</span>
+        <span class="n">c_a</span><span class="p">,</span> <span class="n">c_b</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_concentrations_from_edges</span><span class="p">()</span>
+        <span class="n">x</span><span class="p">,</span> <span class="n">z</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">compute_flux_PeAbs</span><span class="p">()</span>
+        <span class="n">idx_pack</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">compute_flux_idx</span><span class="p">()</span>
+        <span class="n">args</span> <span class="o">=</span> <span class="p">[</span><span class="n">x</span><span class="p">,</span> <span class="n">z</span><span class="p">,</span> <span class="n">idx_pack</span><span class="p">]</span>
+        <span class="n">e_up_sinh_x</span><span class="p">,</span> <span class="n">e_down_sinh_x</span><span class="p">,</span> <span class="n">coth_x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">compute_flux_exp</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">)</span>
+
+        <span class="n">pars</span> <span class="o">=</span> <span class="p">[</span><span class="n">e_up_sinh_x</span><span class="p">,</span> <span class="n">e_down_sinh_x</span><span class="p">]</span>
+        <span class="n">f1_up</span><span class="p">,</span> <span class="n">f1_down</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">calc_abs_jac_coeff_11</span><span class="p">(</span><span class="mf">0.5</span><span class="o">*</span><span class="n">x</span><span class="p">,</span> <span class="n">pars</span><span class="p">)</span>
+        <span class="n">x_coth_x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">multiply</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">coth_x</span><span class="p">)</span><span class="o">*</span><span class="mf">0.5</span>
+        <span class="n">F1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">subtract</span><span class="p">(</span><span class="n">x_coth_x</span><span class="p">,</span> <span class="n">f1_up</span><span class="p">),</span>  <span class="n">z</span><span class="p">)</span>
+        <span class="n">F2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">subtract</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">subtract</span><span class="p">(</span><span class="n">x_coth_x</span><span class="p">,</span> <span class="n">f1_down</span><span class="p">),</span>  <span class="n">z</span><span class="p">)</span>
+
+        <span class="c1"># calc edgewise absorption</span>
+        <span class="n">phi</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">multiply</span><span class="p">(</span><span class="n">c_a</span><span class="p">,</span> <span class="n">F1</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">multiply</span><span class="p">(</span><span class="n">c_b</span><span class="p">,</span> <span class="n">F2</span><span class="p">))</span>
+        <span class="n">A</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">calc_diff_flux</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">circuit</span><span class="o">.</span><span class="n">edges</span><span class="p">[</span><span class="s1">&#39;radius_sq&#39;</span><span class="p">])</span>
+
+        <span class="n">PHI</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">multiply</span><span class="p">(</span><span class="n">A</span><span class="p">,</span> <span class="n">phi</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">circuit</span><span class="o">.</span><span class="n">edges</span><span class="p">[</span><span class="s1">&#39;uptake&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">PHI</span><span class="p">[:]</span>
+
+        <span class="k">return</span> <span class="n">PHI</span></div>
+
+<div class="viewcode-block" id="Overflow.get_concentrations_from_edges"><a class="viewcode-back" href="../../hailhydro.html#hailhydro.flux_overflow.Overflow.get_concentrations_from_edges">[docs]</a>    <span class="k">def</span> <span class="nf">get_concentrations_from_edges</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns the current start and end concentraiton values of each</span>
+<span class="sd">        individual edge.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            ndarray: Edge-vector of start concentions.</span>
+<span class="sd">            ndarray: Edge-vector of end concentions.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># set containers</span>
+        <span class="n">c_a</span><span class="p">,</span> <span class="n">c_b</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">M</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">M</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">j</span><span class="p">,</span> <span class="n">e</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">circuit</span><span class="o">.</span><span class="n">list_graph_edges</span><span class="p">):</span>
+
+            <span class="n">a</span><span class="p">,</span> <span class="n">b</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dict_edges</span><span class="p">[</span><span class="n">e</span><span class="p">]</span>
+            <span class="n">c_a</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">circuit</span><span class="o">.</span><span class="n">G</span><span class="o">.</span><span class="n">nodes</span><span class="p">[</span><span class="n">a</span><span class="p">][</span><span class="s1">&#39;concentrations&#39;</span><span class="p">]</span>
+            <span class="n">c_b</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">circuit</span><span class="o">.</span><span class="n">G</span><span class="o">.</span><span class="n">nodes</span><span class="p">[</span><span class="n">b</span><span class="p">][</span><span class="s1">&#39;concentrations&#39;</span><span class="p">]</span>
+
+        <span class="k">return</span> <span class="n">c_a</span><span class="p">,</span> <span class="n">c_b</span></div>
+
+    <span class="c1"># calc absorption jacobian and subcomponents</span>
+<div class="viewcode-block" id="Overflow.calc_absorption_jacobian"><a class="viewcode-back" href="../../hailhydro.html#hailhydro.flux_overflow.Overflow.calc_absorption_jacobian">[docs]</a>    <span class="k">def</span> <span class="nf">calc_absorption_jacobian</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Compute total edge&#39;s absorption Jacobian matrix (with regard to radial</span>
+<span class="sd">        changes).</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            ndarray: The Jacobian matrix (with regard to radial changes).</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># calc coefficients</span>
+        <span class="n">A</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">calc_diff_flux</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">circuit</span><span class="o">.</span><span class="n">edges</span><span class="p">[</span><span class="s1">&#39;radius_sq&#39;</span><span class="p">])</span>
+        <span class="n">alphas</span><span class="p">,</span> <span class="n">omegas</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_alpha_omega_from_edges</span><span class="p">()</span>
+        <span class="n">c_a</span><span class="p">,</span> <span class="n">c_b</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_concentrations_from_edges</span><span class="p">()</span>
+        <span class="n">c_n</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">circuit</span><span class="o">.</span><span class="n">nodes</span><span class="p">[</span><span class="s1">&#39;concentration&#39;</span><span class="p">]</span>
+
+        <span class="n">x</span><span class="p">,</span> <span class="n">z</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">compute_flux_PeAbs</span><span class="p">()</span>
+        <span class="n">idx_pack</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">compute_flux_idx</span><span class="p">()</span>
+        <span class="n">args</span> <span class="o">=</span> <span class="p">[</span><span class="n">x</span><span class="p">,</span> <span class="n">z</span><span class="p">,</span> <span class="n">idx_pack</span><span class="p">]</span>
+        <span class="n">e_up_sinh_x</span><span class="p">,</span> <span class="n">e_down_sinh_x</span><span class="p">,</span> <span class="n">coth_x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">compute_flux_exp</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">)</span>
+
+        <span class="n">pars</span> <span class="o">=</span> <span class="p">[</span><span class="n">x</span><span class="p">,</span> <span class="n">z</span><span class="p">,</span> <span class="n">e_up_sinh_x</span><span class="p">,</span> <span class="n">e_down_sinh_x</span><span class="p">,</span> <span class="n">coth_x</span><span class="p">,</span> <span class="n">idx_pack</span><span class="p">]</span>
+        <span class="n">F1</span><span class="p">,</span> <span class="n">F2</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">calc_absorption_jacobian_coefficients_1</span><span class="p">(</span><span class="o">*</span><span class="n">pars</span><span class="p">)</span>
+        <span class="n">F3</span><span class="p">,</span> <span class="n">F4</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">calc_absorption_jacobian_coefficients_2</span><span class="p">(</span><span class="o">*</span><span class="n">pars</span><span class="p">)</span>
+        <span class="n">qa</span><span class="p">,</span> <span class="n">qb</span><span class="p">,</span> <span class="n">q1</span><span class="p">,</span> <span class="n">q2</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">calc_abs_jac_coeff_11</span><span class="p">(</span><span class="n">A</span><span class="p">,</span> <span class="p">[</span><span class="n">c_a</span><span class="p">,</span> <span class="n">c_b</span><span class="p">,</span> <span class="n">F1</span><span class="p">,</span> <span class="n">F2</span><span class="p">])</span>
+
+        <span class="n">qaF3</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">multiply</span><span class="p">(</span><span class="n">qa</span><span class="p">,</span> <span class="n">F3</span><span class="p">)</span>
+        <span class="n">qbF4</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">multiply</span><span class="p">(</span><span class="n">qb</span><span class="p">,</span> <span class="n">F4</span><span class="p">)</span>
+
+        <span class="n">phi</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">multiply</span><span class="p">(</span><span class="n">c_a</span><span class="p">,</span> <span class="n">F1</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">multiply</span><span class="p">(</span><span class="n">c_b</span><span class="p">,</span> <span class="n">F2</span><span class="p">))</span>
+
+        <span class="c1"># calc jacobian components</span>
+        <span class="n">J_PE</span><span class="p">,</span> <span class="n">J_Q</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">calc_flux_jacobian</span><span class="p">()</span>
+        <span class="n">J_A</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">calc_cross_section_jacobian</span><span class="p">()</span>
+        <span class="n">J_C</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">calc_concentration_jacobian</span><span class="p">(</span><span class="n">J_PE</span><span class="p">,</span> <span class="n">c_n</span><span class="p">)</span>
+
+        <span class="n">J_phi</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">M</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">M</span><span class="p">))</span>
+        <span class="k">for</span> <span class="n">j</span><span class="p">,</span> <span class="n">e</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">circuit</span><span class="o">.</span><span class="n">list_graph_edges</span><span class="p">):</span>
+
+            <span class="n">J_phi</span><span class="p">[</span><span class="n">j</span><span class="p">,</span> <span class="p">:]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">J_phi</span><span class="p">[</span><span class="n">j</span><span class="p">,</span> <span class="p">:],</span> <span class="n">np</span><span class="o">.</span><span class="n">multiply</span><span class="p">(</span><span class="n">J_A</span><span class="p">[</span><span class="n">j</span><span class="p">,</span> <span class="p">:],</span> <span class="n">phi</span><span class="p">))</span>
+
+            <span class="n">J_phi</span><span class="p">[</span><span class="n">j</span><span class="p">,</span> <span class="p">:]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">J_phi</span><span class="p">[</span><span class="n">j</span><span class="p">,</span> <span class="p">:],</span> <span class="n">np</span><span class="o">.</span><span class="n">multiply</span><span class="p">(</span><span class="n">J_C</span><span class="p">[</span><span class="n">j</span><span class="p">,</span> <span class="n">alphas</span><span class="p">],</span> <span class="n">q1</span><span class="p">))</span>
+            <span class="n">J_phi</span><span class="p">[</span><span class="n">j</span><span class="p">,</span> <span class="p">:]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">J_phi</span><span class="p">[</span><span class="n">j</span><span class="p">,</span> <span class="p">:],</span> <span class="n">np</span><span class="o">.</span><span class="n">multiply</span><span class="p">(</span><span class="n">J_C</span><span class="p">[</span><span class="n">j</span><span class="p">,</span> <span class="n">omegas</span><span class="p">],</span> <span class="n">q2</span><span class="p">))</span>
+
+            <span class="n">J_phi</span><span class="p">[</span><span class="n">j</span><span class="p">,</span> <span class="p">:]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">J_phi</span><span class="p">[</span><span class="n">j</span><span class="p">,</span> <span class="p">:],</span> <span class="n">np</span><span class="o">.</span><span class="n">multiply</span><span class="p">(</span><span class="n">J_PE</span><span class="p">[</span><span class="n">j</span><span class="p">,</span> <span class="p">:],</span> <span class="n">qaF3</span><span class="p">))</span>
+            <span class="n">J_phi</span><span class="p">[</span><span class="n">j</span><span class="p">,</span> <span class="p">:]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">J_phi</span><span class="p">[</span><span class="n">j</span><span class="p">,</span> <span class="p">:],</span> <span class="n">np</span><span class="o">.</span><span class="n">multiply</span><span class="p">(</span><span class="n">J_PE</span><span class="p">[</span><span class="n">j</span><span class="p">,</span> <span class="p">:],</span> <span class="n">qbF4</span><span class="p">))</span>
+
+        <span class="k">return</span> <span class="n">J_phi</span></div>
+
+<div class="viewcode-block" id="Overflow.get_alpha_omega_from_edges"><a class="viewcode-back" href="../../hailhydro.html#hailhydro.flux_overflow.Overflow.get_alpha_omega_from_edges">[docs]</a>    <span class="k">def</span> <span class="nf">get_alpha_omega_from_edges</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns the start(alpha) and end(omega) node of all network edges.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            ndarray: Edge-vector of start nodes.</span>
+<span class="sd">            ndarray: Edge-vector of end nodes.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">alphas</span><span class="p">,</span> <span class="n">omegas</span> <span class="o">=</span> <span class="p">[],</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">j</span><span class="p">,</span> <span class="n">e</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">circuit</span><span class="o">.</span><span class="n">list_graph_edges</span><span class="p">):</span>
+
+            <span class="n">a</span><span class="p">,</span> <span class="n">b</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dict_edges</span><span class="p">[</span><span class="n">e</span><span class="p">]</span>
+            <span class="n">alphas</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">a</span><span class="p">)</span>
+            <span class="n">omegas</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">b</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">alphas</span><span class="p">,</span> <span class="n">omegas</span></div>
+
+<div class="viewcode-block" id="Overflow.calc_absorption_jacobian_coefficients_1"><a class="viewcode-back" href="../../hailhydro.html#hailhydro.flux_overflow.Overflow.calc_absorption_jacobian_coefficients_1">[docs]</a>    <span class="k">def</span> <span class="nf">calc_absorption_jacobian_coefficients_1</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Caluclation of intermediate transport matrix and Jacobain components.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            args (iterable):\n</span>
+<span class="sd">                A sequence of arguments for caluclations of intermediate</span>
+<span class="sd">                transport matrix and Jacobain components.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            ndarray: Edge-vector of intermediate components (UP)</span>
+<span class="sd">            ndarray: Edge-vector of intermediate components (DOWN)</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">x</span><span class="p">,</span> <span class="n">z</span><span class="p">,</span> <span class="n">e_up_sinh_x</span><span class="p">,</span> <span class="n">e_down_sinh_x</span><span class="p">,</span> <span class="n">coth_x</span><span class="p">,</span> <span class="n">idx_pack</span> <span class="o">=</span> <span class="n">args</span>
+
+        <span class="n">pars</span> <span class="o">=</span> <span class="p">[</span><span class="n">e_up_sinh_x</span><span class="p">,</span> <span class="n">e_down_sinh_x</span><span class="p">]</span>
+        <span class="n">f1_up</span><span class="p">,</span> <span class="n">f1_down</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">calc_abs_jac_coeff_11</span><span class="p">(</span><span class="mf">0.5</span><span class="o">*</span><span class="n">x</span><span class="p">,</span> <span class="n">pars</span><span class="p">)</span>
+        <span class="n">F1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">subtract</span><span class="p">(</span><span class="mf">0.5</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">multiply</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">coth_x</span><span class="p">),</span> <span class="n">f1_up</span><span class="p">),</span> <span class="n">z</span><span class="p">)</span>
+        <span class="n">F2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">subtract</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">subtract</span><span class="p">(</span><span class="mf">0.5</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">multiply</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">coth_x</span><span class="p">),</span> <span class="n">f1_down</span><span class="p">),</span> <span class="n">z</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">F1</span><span class="p">,</span> <span class="n">F2</span></div>
+
+<div class="viewcode-block" id="Overflow.calc_abs_jac_coeff_11"><a class="viewcode-back" href="../../hailhydro.html#hailhydro.flux_overflow.Overflow.calc_abs_jac_coeff_11">[docs]</a>    <span class="k">def</span> <span class="nf">calc_abs_jac_coeff_11</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">pars</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Auxillarycilary function for sequenced ndarray multiplication.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            x (array):\n</span>
+<span class="sd">                An array as constant target for numpy multiplication.</span>
+<span class="sd">            pars (iterable):\n</span>
+<span class="sd">                An sequence of arrays for numpy multiplication.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            list: A list of ndarray products.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">coeff</span> <span class="o">=</span> <span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">multiply</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span> <span class="k">for</span> <span class="n">y</span> <span class="ow">in</span> <span class="n">pars</span><span class="p">]</span>
+
+        <span class="k">return</span> <span class="n">coeff</span></div>
+
+<div class="viewcode-block" id="Overflow.calc_absorption_jacobian_coefficients_2"><a class="viewcode-back" href="../../hailhydro.html#hailhydro.flux_overflow.Overflow.calc_absorption_jacobian_coefficients_2">[docs]</a>    <span class="k">def</span> <span class="nf">calc_absorption_jacobian_coefficients_2</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Caluclation of intermediate transport matrix and Jacobain components.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            args (iterable):\n</span>
+<span class="sd">                A sequence of arguments for caluclations of intermediate</span>
+<span class="sd">                transport matrix and Jacobain components.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            ndarray: Edge-vector of intermediate components (UP)</span>
+<span class="sd">            ndarray: Edge-vector of intermediate components (DOWN)</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">x</span><span class="p">,</span> <span class="n">z</span><span class="p">,</span> <span class="n">e_up_sinh_x</span><span class="p">,</span> <span class="n">e_down_sinh_x</span><span class="p">,</span> <span class="n">coth_x</span><span class="p">,</span> <span class="n">idx_pack</span> <span class="o">=</span> <span class="n">args</span>
+        <span class="n">F3</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">M</span><span class="p">)</span>
+        <span class="n">F4</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">M</span><span class="p">)</span>
+        <span class="n">idx_lower</span> <span class="o">=</span> <span class="n">idx_pack</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">idx_over</span> <span class="o">=</span> <span class="n">idx_pack</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">+</span><span class="n">idx_pack</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
+
+        <span class="c1"># subcritical</span>
+        <span class="n">sinh_x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sinh</span><span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="n">idx_lower</span><span class="p">]</span><span class="o">*</span><span class="mf">0.5</span><span class="p">)</span>
+        <span class="n">cosh_x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">cosh</span><span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="n">idx_lower</span><span class="p">]</span><span class="o">*</span><span class="mf">0.5</span><span class="p">)</span>
+        <span class="n">e_up</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">z</span><span class="p">[</span><span class="n">idx_lower</span><span class="p">])</span>
+        <span class="n">e_down</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="n">z</span><span class="p">[</span><span class="n">idx_lower</span><span class="p">])</span>
+
+        <span class="n">d2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">divide</span><span class="p">(</span><span class="mf">2.</span><span class="o">*</span><span class="n">z</span><span class="p">[</span><span class="n">idx_lower</span><span class="p">],</span> <span class="n">x</span><span class="p">[</span><span class="n">idx_lower</span><span class="p">])</span>
+        <span class="n">e2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">divide</span><span class="p">(</span><span class="n">z</span><span class="p">[</span><span class="n">idx_lower</span><span class="p">],</span> <span class="n">sinh_x</span><span class="p">)</span>
+
+        <span class="n">f2_up</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">subtract</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">multiply</span><span class="p">(</span><span class="n">d2</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">subtract</span><span class="p">(</span><span class="n">cosh_x</span><span class="p">,</span> <span class="n">e_up</span><span class="p">)),</span> <span class="n">e2</span><span class="p">)</span>
+        <span class="n">f2_down</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">subtract</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">multiply</span><span class="p">(</span><span class="n">d2</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">subtract</span><span class="p">(</span><span class="n">cosh_x</span><span class="p">,</span> <span class="n">e_down</span><span class="p">)),</span> <span class="n">e2</span><span class="p">)</span>
+
+        <span class="n">m3</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">multiply</span><span class="p">(</span><span class="n">coth_x</span><span class="p">[</span><span class="n">idx_lower</span><span class="p">],</span> <span class="n">z</span><span class="p">[</span><span class="n">idx_lower</span><span class="p">])</span>
+        <span class="n">d3u</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">subtract</span><span class="p">(</span><span class="n">m3</span><span class="p">,</span> <span class="mf">0.5</span><span class="o">*</span><span class="n">x</span><span class="p">[</span><span class="n">idx_lower</span><span class="p">])</span>
+        <span class="n">d3d</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">m3</span><span class="p">,</span> <span class="mf">0.5</span><span class="o">*</span><span class="n">x</span><span class="p">[</span><span class="n">idx_lower</span><span class="p">])</span>
+
+        <span class="n">f3_up</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">multiply</span><span class="p">(</span><span class="n">e_up</span><span class="p">,</span> <span class="n">d3u</span><span class="p">),</span> <span class="n">sinh_x</span><span class="p">)</span>
+        <span class="n">f3_down</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">subtract</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">multiply</span><span class="p">(</span><span class="n">e_down</span><span class="p">,</span> <span class="n">d3d</span><span class="p">),</span> <span class="n">sinh_x</span><span class="p">)</span>
+
+        <span class="n">F3</span><span class="p">[</span><span class="n">idx_lower</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.5</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">divide</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">f2_up</span><span class="p">,</span> <span class="n">f3_up</span><span class="p">),</span> <span class="n">sinh_x</span><span class="p">)</span>
+        <span class="n">F4</span><span class="p">[</span><span class="n">idx_lower</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.5</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">divide</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">f2_down</span><span class="p">,</span> <span class="n">f3_down</span><span class="p">),</span> <span class="n">sinh_x</span><span class="p">)</span>
+
+        <span class="c1"># overcritical</span>
+        <span class="n">d2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">divide</span><span class="p">(</span><span class="mf">2.</span><span class="o">*</span><span class="n">z</span><span class="p">[</span><span class="n">idx_over</span><span class="p">],</span> <span class="n">x</span><span class="p">[</span><span class="n">idx_over</span><span class="p">])</span>
+        <span class="n">m3u</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">multiply</span><span class="p">(</span><span class="n">coth_x</span><span class="p">[</span><span class="n">idx_over</span><span class="p">],</span> <span class="n">z</span><span class="p">[</span><span class="n">idx_over</span><span class="p">])</span>
+
+        <span class="n">f2_up</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">multiply</span><span class="p">(</span><span class="n">d2</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">subtract</span><span class="p">(</span><span class="n">coth_x</span><span class="p">[</span><span class="n">idx_over</span><span class="p">],</span> <span class="mf">2.</span><span class="p">))</span>
+        <span class="n">f3_up</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="mf">2.</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">subtract</span><span class="p">(</span><span class="n">m3u</span><span class="p">,</span> <span class="mf">0.5</span><span class="o">*</span><span class="n">x</span><span class="p">[</span><span class="n">idx_over</span><span class="p">]),</span> <span class="mf">1.</span><span class="p">)</span>
+        <span class="n">f2_down</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">multiply</span><span class="p">(</span><span class="n">d2</span><span class="p">,</span> <span class="n">coth_x</span><span class="p">[</span><span class="n">idx_over</span><span class="p">])</span>
+        <span class="c1"># f3_down = np.zeros(len(idx_over))</span>
+
+        <span class="n">F3</span><span class="p">[</span><span class="n">idx_over</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.5</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">f2_up</span><span class="p">,</span> <span class="n">f3_up</span><span class="p">)</span>
+        <span class="n">F4</span><span class="p">[</span><span class="n">idx_over</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.5</span><span class="o">*</span><span class="n">f2_down</span>
+
+        <span class="k">return</span> <span class="n">F3</span><span class="p">,</span> <span class="n">F4</span></div>
+
+    <span class="c1"># calc flux jacobian and subcomponents</span>
+<div class="viewcode-block" id="Overflow.calc_flux_jacobian"><a class="viewcode-back" href="../../hailhydro.html#hailhydro.flux_overflow.Overflow.calc_flux_jacobian">[docs]</a>    <span class="k">def</span> <span class="nf">calc_flux_jacobian</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Compute the flow components of the absorption Jacobian matrix.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            ndarray:\n</span>
+<span class="sd">                The Pleclet number Jacobian matrix (with regard to radial</span>
+<span class="sd">                changes).</span>
+<span class="sd">            ndarray:\n</span>
+<span class="sd">                The flow rate Jacobian matrix (with regard to radial changes).</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># init containers</span>
+        <span class="n">idt</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">identity</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">M</span><span class="p">)</span>
+        <span class="n">J_PE</span><span class="p">,</span> <span class="n">J_Q</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">M</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">M</span><span class="p">)),</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">M</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">M</span><span class="p">))</span>
+
+        <span class="c1"># set coefficients</span>
+        <span class="n">r</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">circuit</span><span class="o">.</span><span class="n">edges</span><span class="p">[</span><span class="s1">&#39;radius&#39;</span><span class="p">]</span>
+        <span class="n">f1</span> <span class="o">=</span> <span class="mf">2.</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">divide</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">circuit</span><span class="o">.</span><span class="n">edges</span><span class="p">[</span><span class="s1">&#39;peclet&#39;</span><span class="p">],</span> <span class="n">r</span><span class="p">)</span>
+        <span class="n">f2</span> <span class="o">=</span> <span class="mf">4.</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">divide</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">circuit</span><span class="o">.</span><span class="n">edges</span><span class="p">[</span><span class="s1">&#39;flow_rate&#39;</span><span class="p">],</span> <span class="n">r</span><span class="p">)</span>
+
+        <span class="n">k</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">circuit</span><span class="o">.</span><span class="n">edges</span><span class="p">[</span><span class="s1">&#39;conductivity&#39;</span><span class="p">]</span>
+        <span class="n">INV</span> <span class="o">=</span> <span class="n">lina</span><span class="o">.</span><span class="n">pinv</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">B</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">diag</span><span class="p">(</span><span class="n">k</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">BT</span><span class="p">)))</span>
+        <span class="n">D</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">BT</span><span class="p">,</span> <span class="n">INV</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">B</span><span class="p">)</span>
+
+        <span class="c1"># calc jacobian</span>
+        <span class="n">r_sq</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">circuit</span><span class="o">.</span><span class="n">edges</span><span class="p">[</span><span class="s1">&#39;radius_sq&#39;</span><span class="p">]</span>
+        <span class="n">L</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">circuit</span><span class="o">.</span><span class="n">edges</span><span class="p">[</span><span class="s1">&#39;length&#39;</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">c</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">k</span><span class="p">):</span>
+
+            <span class="n">sq_kernel</span> <span class="o">=</span> <span class="n">r_sq</span><span class="o">/</span><span class="n">r_sq</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+            <span class="n">l_kernel</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">divide</span><span class="p">(</span><span class="n">L</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">L</span><span class="p">)</span>
+
+            <span class="n">s1</span> <span class="o">=</span> <span class="mf">2.</span><span class="o">*</span><span class="n">c</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">multiply</span><span class="p">(</span><span class="n">D</span><span class="p">[:,</span> <span class="n">i</span><span class="p">],</span> <span class="n">sq_kernel</span><span class="p">)</span>
+            <span class="n">J_PE</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="p">:]</span> <span class="o">=</span> <span class="n">f1</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">subtract</span><span class="p">(</span><span class="n">idt</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="p">:],</span> <span class="n">s1</span><span class="p">)</span>
+
+            <span class="n">m2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">multiply</span><span class="p">(</span><span class="n">l_kernel</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">power</span><span class="p">(</span><span class="n">sq_kernel</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span>
+            <span class="n">s2</span> <span class="o">=</span> <span class="n">c</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">multiply</span><span class="p">(</span><span class="n">D</span><span class="p">[:,</span> <span class="n">i</span><span class="p">],</span> <span class="n">m2</span><span class="p">)</span>
+            <span class="n">J_Q</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="p">:]</span> <span class="o">=</span> <span class="n">f2</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">subtract</span><span class="p">(</span><span class="n">idt</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="p">:],</span> <span class="n">s2</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">J_PE</span><span class="p">,</span> <span class="n">J_Q</span></div>
+
+    <span class="c1"># calc cross section jacobian and subcomponents</span>
+<div class="viewcode-block" id="Overflow.calc_cross_section_jacobian"><a class="viewcode-back" href="../../hailhydro.html#hailhydro.flux_overflow.Overflow.calc_cross_section_jacobian">[docs]</a>    <span class="k">def</span> <span class="nf">calc_cross_section_jacobian</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Compute the radial Jacobian component of the absorption Jacobian</span>
+<span class="sd">        matrix.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            ndarray: The cross-section Jacobian matrix (with regard to radial</span>
+<span class="sd">            changes).</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">J_A</span> <span class="o">=</span> <span class="mf">2.</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">diag</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">circuit</span><span class="o">.</span><span class="n">edges</span><span class="p">[</span><span class="s1">&#39;radius&#39;</span><span class="p">])</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">ref_vars</span>
+
+        <span class="k">return</span> <span class="n">J_A</span></div>
+
+    <span class="c1"># calc concentraion jacobian and subcomponents</span>
+<div class="viewcode-block" id="Overflow.calc_concentration_jacobian"><a class="viewcode-back" href="../../hailhydro.html#hailhydro.flux_overflow.Overflow.calc_concentration_jacobian">[docs]</a>    <span class="k">def</span> <span class="nf">calc_concentration_jacobian</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">J_PE</span><span class="p">,</span> <span class="n">c</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Compute the concentration Jacobian component of the absorption Jacobian</span>
+<span class="sd">        matrix.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            J_PE (array):\n</span>
+<span class="sd">                The Pleclet number Jacobian matrix (with regard to radial</span>
+<span class="sd">                changes).</span>
+<span class="sd">            c (array):\n</span>
+<span class="sd">                The nodal concentration vector.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            ndarray:\n</span>
+<span class="sd">                The concentration Jacobian matrix (with regard to radial</span>
+<span class="sd">                changes).</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># set coefficients</span>
+        <span class="n">dict_coeff</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">calc_concentration_jacobian_coefficients</span><span class="p">(</span><span class="n">c</span><span class="p">)</span>
+        <span class="n">fs1</span> <span class="o">=</span> <span class="n">dict_coeff</span><span class="p">[</span><span class="s1">&#39;flux_sum_1&#39;</span><span class="p">]</span>
+        <span class="n">fs2</span> <span class="o">=</span> <span class="n">dict_coeff</span><span class="p">[</span><span class="s1">&#39;flux_sum_2&#39;</span><span class="p">]</span>
+        <span class="n">inv_B</span><span class="p">,</span> <span class="n">c</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">calc_inv_B</span><span class="p">(</span><span class="n">c</span><span class="p">)</span>
+
+        <span class="n">J_C</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">M</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">N</span><span class="p">))</span>
+        <span class="n">J_diag</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">diag</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">calc_cross_section_jacobian</span><span class="p">())</span>
+        <span class="n">J_A</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">M</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">j</span><span class="p">,</span> <span class="n">e</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">circuit</span><span class="o">.</span><span class="n">list_graph_edges</span><span class="p">):</span>
+
+            <span class="n">J_A</span><span class="p">[</span><span class="n">j</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.</span>
+            <span class="n">J_A</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="n">J_diag</span><span class="p">[</span><span class="n">j</span><span class="p">]</span>
+            <span class="n">J_PE_j</span> <span class="o">=</span> <span class="n">J_PE</span><span class="p">[</span><span class="n">j</span><span class="p">,</span> <span class="p">:]</span>
+            <span class="n">pars</span> <span class="o">=</span> <span class="p">[[</span><span class="n">J_diag</span><span class="p">[</span><span class="n">j</span><span class="p">],</span> <span class="n">J_PE_j</span><span class="p">,</span> <span class="n">J_A</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">N</span><span class="p">)]</span>
+
+            <span class="n">JB_eff</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">diag</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">calc_inc_jac_diag</span><span class="p">,</span> <span class="n">fs1</span><span class="p">,</span> <span class="n">fs2</span><span class="p">,</span> <span class="n">pars</span><span class="p">)))</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">calc_incidence_jacobian_dev</span><span class="p">(</span><span class="n">JB_eff</span><span class="p">,</span> <span class="n">dict_coeff</span><span class="p">,</span> <span class="n">pars</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">evaluate_jacobian</span><span class="p">(</span><span class="n">j</span><span class="p">,</span> <span class="n">J_C</span><span class="p">,</span> <span class="n">JB_eff</span><span class="p">,</span> <span class="n">inv_B</span><span class="p">,</span> <span class="n">c</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">J_C</span></div>
+
+<div class="viewcode-block" id="Overflow.calc_concentration_jacobian_coefficients"><a class="viewcode-back" href="../../hailhydro.html#hailhydro.flux_overflow.Overflow.calc_concentration_jacobian_coefficients">[docs]</a>    <span class="k">def</span> <span class="nf">calc_concentration_jacobian_coefficients</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">c</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Auxillary function to compute intermediate coefficients for</span>
+<span class="sd">        concentration Jacobian matrix evaluation.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            c (array):\n</span>
+<span class="sd">                    The nodal concentration vector.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            dict: A series of coefficient arrays for further numerics.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">dict_coeff</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">A</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">calc_diff_flux</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">circuit</span><span class="o">.</span><span class="n">edges</span><span class="p">[</span><span class="s1">&#39;radius_sq&#39;</span><span class="p">])</span>
+        <span class="n">x</span><span class="p">,</span> <span class="n">z</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">compute_flux_PeAbs</span><span class="p">()</span>
+        <span class="n">idx_pack</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">compute_flux_idx</span><span class="p">()</span>
+        <span class="n">args</span> <span class="o">=</span> <span class="p">[</span><span class="n">x</span><span class="p">,</span> <span class="n">z</span><span class="p">,</span> <span class="n">idx_pack</span><span class="p">]</span>
+        <span class="n">e_up_sinh_x</span><span class="p">,</span> <span class="n">e_down_sinh_x</span><span class="p">,</span> <span class="n">coth_x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">compute_flux_exp</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">)</span>
+
+        <span class="n">f2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">multiply</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">multiply</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">coth_x</span><span class="p">),</span> <span class="n">A</span><span class="p">)</span><span class="o">*</span><span class="mf">0.5</span>
+        <span class="n">pars</span> <span class="o">=</span> <span class="p">[</span><span class="n">e_up_sinh_x</span><span class="p">,</span> <span class="n">e_down_sinh_x</span><span class="p">]</span>
+        <span class="n">f3</span><span class="p">,</span> <span class="n">f4</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">calc_abs_jac_coeff_11</span><span class="p">(</span><span class="mf">0.5</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">multiply</span><span class="p">(</span><span class="n">A</span><span class="p">,</span> <span class="n">x</span><span class="p">),</span> <span class="n">pars</span><span class="p">)</span>
+
+        <span class="n">j_coth_x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">M</span><span class="p">)</span>
+        <span class="n">idx_lower</span> <span class="o">=</span> <span class="n">idx_pack</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">d1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">divide</span><span class="p">(</span><span class="n">coth_x</span><span class="p">[</span><span class="n">idx_lower</span><span class="p">],</span> <span class="n">np</span><span class="o">.</span><span class="n">cosh</span><span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="n">idx_lower</span><span class="p">]))</span>
+        <span class="n">j_coth_x</span><span class="p">[</span><span class="n">idx_lower</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">power</span><span class="p">(</span><span class="n">d1</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+
+        <span class="n">f2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">multiply</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">coth_x</span><span class="p">)</span><span class="o">*</span><span class="mf">0.5</span>
+        <span class="n">d2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">divide</span><span class="p">(</span><span class="n">z</span><span class="p">,</span> <span class="n">x</span><span class="p">)</span>
+        <span class="n">f4</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">subtract</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">multiply</span><span class="p">(</span><span class="n">d2</span><span class="p">,</span> <span class="n">coth_x</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">multiply</span><span class="p">(</span><span class="n">z</span><span class="p">,</span> <span class="n">j_coth_x</span><span class="p">)</span><span class="o">*</span><span class="mf">0.5</span><span class="p">)</span>
+
+        <span class="n">pars</span> <span class="o">=</span> <span class="p">[</span><span class="n">e_up_sinh_x</span><span class="p">,</span> <span class="n">e_down_sinh_x</span><span class="p">]</span>
+        <span class="n">f_up</span><span class="p">,</span> <span class="n">f_down</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">calc_abs_jac_coeff_11</span><span class="p">(</span><span class="mf">0.5</span><span class="o">*</span><span class="n">x</span><span class="p">,</span> <span class="n">pars</span><span class="p">)</span>
+        <span class="n">f5</span><span class="p">,</span> <span class="n">f6</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">calc_abs_jac_coeff_11</span><span class="p">(</span><span class="n">A</span><span class="p">,</span> <span class="n">pars</span><span class="p">)</span>
+
+        <span class="n">m2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">multiply</span><span class="p">(</span><span class="n">z</span><span class="p">,</span> <span class="n">coth_x</span><span class="p">)</span><span class="o">*</span><span class="mf">0.5</span>
+        <span class="n">J_f_up</span> <span class="o">=</span> <span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">multiply</span><span class="p">(</span><span class="n">f5</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">subtract</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">d2</span><span class="p">,</span> <span class="n">x</span><span class="o">*</span><span class="mf">0.25</span><span class="p">),</span> <span class="n">m2</span><span class="p">))</span>
+        <span class="n">J_f_down</span> <span class="o">=</span> <span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">multiply</span><span class="p">(</span><span class="n">f6</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">subtract</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">subtract</span><span class="p">(</span><span class="n">d2</span><span class="p">,</span> <span class="n">x</span><span class="o">*</span><span class="mf">0.25</span><span class="p">),</span> <span class="n">m2</span><span class="p">))</span>
+
+        <span class="n">dict_coeff</span><span class="p">[</span><span class="s1">&#39;f_up&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">f_up</span>
+        <span class="n">dict_coeff</span><span class="p">[</span><span class="s1">&#39;f_down&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">f_down</span>
+        <span class="n">dict_coeff</span><span class="p">[</span><span class="s1">&#39;J_f_up&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">J_f_up</span>
+        <span class="n">dict_coeff</span><span class="p">[</span><span class="s1">&#39;J_f_down&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">J_f_down</span>
+
+        <span class="n">list_n</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">circuit</span><span class="o">.</span><span class="n">list_graph_nodes</span>
+        <span class="n">arg1</span> <span class="o">=</span> <span class="p">[</span><span class="n">z</span><span class="p">,</span> <span class="n">f2</span><span class="p">]</span>
+        <span class="n">flux_sum_1</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">flux_sum_1</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="o">*</span><span class="n">arg1</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">n</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">list_n</span><span class="p">)]</span>
+        <span class="n">arg2</span> <span class="o">=</span> <span class="p">[</span><span class="n">z</span><span class="p">,</span> <span class="n">A</span><span class="p">,</span> <span class="n">f4</span><span class="p">]</span>
+        <span class="n">flux_sum_2</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">flux_sum_2</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="o">*</span><span class="n">arg2</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">n</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">list_n</span><span class="p">)]</span>
+
+        <span class="n">dict_coeff</span><span class="p">[</span><span class="s1">&#39;flux_sum_1&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">flux_sum_1</span><span class="p">)</span>
+        <span class="n">dict_coeff</span><span class="p">[</span><span class="s1">&#39;flux_sum_2&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">flux_sum_2</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">dict_coeff</span></div>
+
+<div class="viewcode-block" id="Overflow.flux_sum_1"><a class="viewcode-back" href="../../hailhydro.html#hailhydro.flux_overflow.Overflow.flux_sum_1">[docs]</a>    <span class="k">def</span> <span class="nf">flux_sum_1</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">z</span><span class="p">,</span> <span class="n">f2</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Auxillary function for intermediate coefficient computation.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            i (int):\n</span>
+<span class="sd">                Index for incidence row of matrix.</span>
+<span class="sd">            z (array):\n</span>
+<span class="sd">                Edge-vector of Peclet numbers*0.5.</span>
+<span class="sd">            f2 (array):\n</span>
+<span class="sd">                Auxillary edge-vector.</span>
+
+
+<span class="sd">        Returns:</span>
+<span class="sd">            ndarray: Auxillary edge-vector for further numerics.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">f</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">multiply</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">absolute</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">B</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="p">:]),</span> <span class="n">f2</span><span class="p">)</span>
+        <span class="n">fs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">multiply</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">B</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="p">:],</span> <span class="n">z</span><span class="p">),</span> <span class="n">f</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">fs</span></div>
+
+<div class="viewcode-block" id="Overflow.flux_sum_2"><a class="viewcode-back" href="../../hailhydro.html#hailhydro.flux_overflow.Overflow.flux_sum_2">[docs]</a>    <span class="k">def</span> <span class="nf">flux_sum_2</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">z</span><span class="p">,</span> <span class="n">A</span><span class="p">,</span> <span class="n">f4</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Auxillary function for intermediate coefficient computation.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            i (int):\n</span>
+<span class="sd">                Index for incidence row of matrix.</span>
+<span class="sd">            z (array):\n</span>
+<span class="sd">                Edge-vector of Peclet numbers*0.5.</span>
+<span class="sd">            A (array):\n</span>
+<span class="sd">                Edge-vector of cross-section values.</span>
+<span class="sd">            f4 (array):\n</span>
+<span class="sd">                Auxillary edge-vector.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            ndarray: Auxillary edge-vector for further numerics.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">f</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">multiply</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">absolute</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">B</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="p">:]),</span> <span class="n">f4</span><span class="p">)</span>
+        <span class="n">fs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">multiply</span><span class="p">(</span><span class="n">A</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">B</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="p">:]</span><span class="o">*</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">f</span><span class="p">))</span>
+
+        <span class="k">return</span> <span class="n">fs</span></div>
+
+<div class="viewcode-block" id="Overflow.calc_inv_B"><a class="viewcode-back" href="../../hailhydro.html#hailhydro.flux_overflow.Overflow.calc_inv_B">[docs]</a>    <span class="k">def</span> <span class="nf">calc_inv_B</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">c</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return the reduced concentration vector and inverted transport matrix.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            c(array):\n</span>
+<span class="sd">                The nodal concentration vector.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            ndarray: Inverse, reduced transport matrix</span>
+<span class="sd">            ndarray: Reduced concentration vector</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">B_new</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">B_eff</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">idx_eff</span><span class="p">,</span> <span class="p">:]</span>
+        <span class="n">B_new</span> <span class="o">=</span> <span class="n">B_new</span><span class="p">[:,</span> <span class="bp">self</span><span class="o">.</span><span class="n">idx_eff</span><span class="p">]</span>
+        <span class="n">c</span> <span class="o">=</span> <span class="n">c</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">idx_eff</span><span class="p">]</span>
+        <span class="n">inv_B</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">inv</span><span class="p">(</span><span class="n">B_new</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">inv_B</span><span class="p">,</span> <span class="n">c</span></div>
+
+<div class="viewcode-block" id="Overflow.calc_inc_jac_diag"><a class="viewcode-back" href="../../hailhydro.html#hailhydro.flux_overflow.Overflow.calc_inc_jac_diag">[docs]</a>    <span class="k">def</span> <span class="nf">calc_inc_jac_diag</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">flux_sum_1</span><span class="p">,</span> <span class="n">flux_sum_2</span><span class="p">,</span> <span class="n">pars</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Auxillary function to compute intermediate Jacobian components for</span>
+<span class="sd">        absoprtion Jacobian matrix.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            flux_sum1 (array):\n</span>
+<span class="sd">                Auxillary edge-vector.</span>
+<span class="sd">            flux_sum2 (array):\n</span>
+<span class="sd">                Auxillary edge-vector.</span>
+<span class="sd">            pars(iterable):\n</span>
+<span class="sd">                A list of Jacobian factor components.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            ndarray: Intermediate absorption Jacobian matrix.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">J_diag</span><span class="p">,</span> <span class="n">J_PE_j</span><span class="p">,</span> <span class="n">J_A</span><span class="p">,</span> <span class="n">j</span> <span class="o">=</span> <span class="n">pars</span>
+        <span class="n">JB_eff</span> <span class="o">=</span> <span class="n">J_diag</span><span class="o">*</span><span class="n">flux_sum_1</span><span class="p">[</span><span class="n">j</span><span class="p">]</span><span class="o">+</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">multiply</span><span class="p">(</span><span class="n">J_PE_j</span><span class="p">,</span> <span class="n">flux_sum_2</span><span class="p">))</span>
+
+        <span class="k">return</span> <span class="n">JB_eff</span></div>
+
+<div class="viewcode-block" id="Overflow.calc_incidence_jacobian_dev"><a class="viewcode-back" href="../../hailhydro.html#hailhydro.flux_overflow.Overflow.calc_incidence_jacobian_dev">[docs]</a>    <span class="k">def</span> <span class="nf">calc_incidence_jacobian_dev</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">JB_eff</span><span class="p">,</span> <span class="n">dict_coeff</span><span class="p">,</span> <span class="n">pars</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Auxillary function to merge intermediate Jacobian components into</span>
+<span class="sd">        effective absoprtion Jacobian matrix.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            JB_eff (ndarray):\n</span>
+<span class="sd">                Intermediate absorption Jacobian matrix.</span>
+<span class="sd">            dict_coeff (dict):\n</span>
+<span class="sd">                A series of coefficient arrays for further numerics.</span>
+<span class="sd">            pars(iterable):\n</span>
+<span class="sd">                A list of Jacobian factor components.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">J_diag</span><span class="p">,</span> <span class="n">J_PE_j</span><span class="p">,</span> <span class="n">J_A</span><span class="p">,</span> <span class="n">j</span> <span class="o">=</span> <span class="n">pars</span>
+
+        <span class="n">jfd</span> <span class="o">=</span> <span class="n">dict_coeff</span><span class="p">[</span><span class="s1">&#39;J_f_down&#39;</span><span class="p">]</span>
+        <span class="n">fd</span> <span class="o">=</span> <span class="n">dict_coeff</span><span class="p">[</span><span class="s1">&#39;f_down&#39;</span><span class="p">]</span>
+        <span class="n">jfu</span> <span class="o">=</span> <span class="n">dict_coeff</span><span class="p">[</span><span class="s1">&#39;J_f_up&#39;</span><span class="p">]</span>
+        <span class="n">fu</span> <span class="o">=</span> <span class="n">dict_coeff</span><span class="p">[</span><span class="s1">&#39;f_up&#39;</span><span class="p">]</span>
+
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">n</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">circuit</span><span class="o">.</span><span class="n">list_graph_nodes</span><span class="p">):</span>
+
+            <span class="n">do</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dict_out</span><span class="p">[</span><span class="n">n</span><span class="p">]</span>
+            <span class="n">dno</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dict_node_out</span><span class="p">[</span><span class="n">n</span><span class="p">]</span>
+            <span class="n">fo1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">multiply</span><span class="p">(</span><span class="n">J_PE_j</span><span class="p">[</span><span class="n">dno</span><span class="p">],</span> <span class="n">jfd</span><span class="p">[</span><span class="n">dno</span><span class="p">])</span>
+            <span class="n">fo2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">multiply</span><span class="p">(</span><span class="n">J_A</span><span class="p">[</span><span class="n">dno</span><span class="p">],</span> <span class="n">fd</span><span class="p">[</span><span class="n">dno</span><span class="p">])</span>
+            <span class="n">JB_eff</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">do</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">subtract</span><span class="p">(</span><span class="n">fo1</span><span class="p">,</span> <span class="n">fo2</span><span class="p">)</span>
+
+            <span class="n">di</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dict_in</span><span class="p">[</span><span class="n">n</span><span class="p">]</span>
+            <span class="n">dni</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dict_node_in</span><span class="p">[</span><span class="n">n</span><span class="p">]</span>
+            <span class="n">fi1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">multiply</span><span class="p">(</span><span class="n">J_PE_j</span><span class="p">[</span><span class="n">dni</span><span class="p">],</span> <span class="n">jfu</span><span class="p">[</span><span class="n">dni</span><span class="p">])</span>
+            <span class="n">fi2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">multiply</span><span class="p">(</span><span class="n">J_A</span><span class="p">[</span><span class="n">dni</span><span class="p">],</span> <span class="n">fu</span><span class="p">[</span><span class="n">dni</span><span class="p">])</span>
+            <span class="n">JB_eff</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">di</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">subtract</span><span class="p">(</span><span class="n">fi1</span><span class="p">,</span> <span class="n">fi2</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Overflow.evaluate_jacobian"><a class="viewcode-back" href="../../hailhydro.html#hailhydro.flux_overflow.Overflow.evaluate_jacobian">[docs]</a>    <span class="k">def</span> <span class="nf">evaluate_jacobian</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">j</span><span class="p">,</span> <span class="n">J_C</span><span class="p">,</span> <span class="n">JB_eff</span><span class="p">,</span> <span class="n">inv_B</span><span class="p">,</span> <span class="n">c</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Update the jth row of the current concentration Jacobian matrix.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            j (int):\n</span>
+<span class="sd">                Row index for concentration Jacobian matrix</span>
+<span class="sd">            J_C (array):\n</span>
+<span class="sd">                The current concentration Jacobian matrix.</span>
+<span class="sd">            JB_eff (array):\n</span>
+<span class="sd">                Intermediate absorption Jacobian matrix.</span>
+<span class="sd">            inv_B (array):\n</span>
+<span class="sd">                The inverse trasport matrix.</span>
+<span class="sd">            c (array):\n</span>
+<span class="sd">                The nodal concentration vector.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">JB_new</span> <span class="o">=</span> <span class="n">JB_eff</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">idx_eff</span><span class="p">,</span> <span class="p">:]</span>
+        <span class="n">JB_new</span> <span class="o">=</span> <span class="n">JB_new</span><span class="p">[:,</span> <span class="bp">self</span><span class="o">.</span><span class="n">idx_eff</span><span class="p">]</span>
+        <span class="n">J_C</span><span class="p">[</span><span class="n">j</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">idx_eff</span><span class="p">]</span> <span class="o">=</span> <span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">inv_B</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">JB_new</span><span class="p">,</span> <span class="n">c</span><span class="p">))</span></div></div>
+</pre></div>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">kirchhoff-hydro  documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../index.html" >Module code</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">hailhydro.flux_overflow</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2022, Felix Kramer.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 4.4.0.
+    </div>
+  </body>
+</html>

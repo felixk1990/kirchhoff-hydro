@@ -1,0 +1,2205 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>hailhydro modules &#8212; kirchhoff-hydro  documentation</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="_static/classic.css" />
+    
+    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="prev" title="Installation" href="intro.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="intro.html" title="Installation"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">kirchhoff-hydro  documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">hailhydro modules</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <section id="hailhydro-modules">
+<h1>hailhydro modules<a class="headerlink" href="#hailhydro-modules" title="Permalink to this headline">¶</a></h1>
+<section id="module-hailhydro.flow_init">
+<span id="hailhydro-flow-init"></span><h2>hailhydro.flow_init<a class="headerlink" href="#module-hailhydro.flow_init" title="Permalink to this headline">¶</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="hailhydro.flow_init.Flow">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">hailhydro.flow_init.</span></span><span class="sig-name descname"><span class="pre">Flow</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">constr:</span> <span class="pre">networkx.classes.graph.Graph</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pars_source:</span> <span class="pre">dict</span> <span class="pre">=</span> <span class="pre">&lt;factory&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pars_plexus:</span> <span class="pre">dict</span> <span class="pre">=</span> <span class="pre">&lt;factory&gt;</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/hailhydro/flow_init.html#Flow"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hailhydro.flow_init.Flow" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>The flow class defines variables and methods for computing Hagen-Poiseuille
+flows on kirchhoff networks.</p>
+<p>To be used in conjunction with ‘kirchhoff’ and ‘goflow’ in order to
+simulate flow-driven network morphogenesis.</p>
+<dl>
+<dt>Attributes:</dt><dd><p>constr (networkx.Graph):</p>
+<blockquote>
+<div><p>A networkx graph or circuit to initilize a flow on.</p>
+</div></blockquote>
+<p>pars_source (dict):</p>
+<blockquote>
+<div><p>The boundary conditions (Neumann) determining the in/outlfow of
+fluid accross the network.</p>
+</div></blockquote>
+<p>pars_plexus (dict):</p>
+<blockquote>
+<div><p>The initial plexus, edge values of  conductivity, the flow is to
+be calculated on.</p>
+</div></blockquote>
+</dd>
+<dt>Methods:</dt><dd><p>init_flow():</p>
+<blockquote>
+<div><p>Initialize flow variables, boundaries and handle constructor
+exceptions.</p>
+</div></blockquote>
+<p>set_boundaries():</p>
+<blockquote>
+<div><p>Explicitly set Neumann-boudaries and initial plexus as defined via
+‘pars_source/plexus’ parameters. Set internal output varaibles and
+incidence information.</p>
+</div></blockquote>
+<p>find_roots(G):</p>
+<blockquote>
+<div><p>Given a networkx graph, return all source-nodes (needs the nodal
+‘source’ attribute set).</p>
+</div></blockquote>
+<p>find_sinks(G):</p>
+<blockquote>
+<div><p>Given a networkx graph, return all sink-nodes (needs the nodal
+‘source’ attribute set).</p>
+</div></blockquote>
+<p>alpha_omega(G, j):</p>
+<blockquote>
+<div><p>Return the start (alpha) and end(omega) node of an edge, for any
+given networkx graph with edge labeling j.</p>
+</div></blockquote>
+<p>calc_pressure(conduct, source):</p>
+<blockquote>
+<div><p>Compute the pressure landscape, considering the current parameter
+and plexus condition.</p>
+</div></blockquote>
+<p>calc_flow_from_pressure(conduct, dP):</p>
+<blockquote>
+<div><p>Compute the flow landscape, considering the current parameter
+and plexus condition.</p>
+</div></blockquote>
+<p>calc_flow(conduct, source):</p>
+<blockquote>
+<div><p>Compute the flow landscape, considering the current parameter
+and plexus condition.</p>
+</div></blockquote>
+<p>calc_sq_flow(sconduct, source):</p>
+<blockquote>
+<div><p>Compute the squared pressure/flow landscape, considering the
+current parameter and plexus condition.</p>
+</div></blockquote>
+<p>calc_cross_section_from_conductivity(conductivity, conductance):</p>
+<blockquote>
+<div><p>Compute the squared radii values from the current conductivity
+matrix and conductance value.</p>
+</div></blockquote>
+<p>calc_conductivity_from_cross_section(R_sq, conductance):</p>
+<blockquote>
+<div><p>Compute the conductivity matrix from the current squared radii
+values and conductance value.</p>
+</div></blockquote>
+<p>calc_configuration_flow():</p>
+<blockquote>
+<div><p>Compute the pressure/flow landscape, considering the current
+parameter and plexus condition.</p>
+</div></blockquote>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="hailhydro.flow_init.Flow.alpha_omega">
+<span class="sig-name descname"><span class="pre">alpha_omega</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">G</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">j</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/hailhydro/flow_init.html#Flow.alpha_omega"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hailhydro.flow_init.Flow.alpha_omega" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the start (alpha) and end(omega) node of an edge, for any given
+networkx graph with edge labeling j.</p>
+<dl>
+<dt>Args:</dt><dd><p>G (networkx.Graph):</p>
+<blockquote>
+<div><p>A networkx graph.</p>
+</div></blockquote>
+<p>j (int):</p>
+<blockquote>
+<div><p>An existent edge label.</p>
+</div></blockquote>
+</dd>
+<dt>Returns:</dt><dd><p>node: The ‘alpha’ node of edge (labeld j)
+node: The ‘omega’ node of edge (labeld j)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="hailhydro.flow_init.Flow.calc_conductivity_from_cross_section">
+<span class="sig-name descname"><span class="pre">calc_conductivity_from_cross_section</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">R_sq</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">conductance</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/hailhydro/flow_init.html#Flow.calc_conductivity_from_cross_section"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hailhydro.flow_init.Flow.calc_conductivity_from_cross_section" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute the conductivity matrix from the current squared radii values
+and conductance value.</p>
+<dl>
+<dt>Args:</dt><dd><p>R_sq (array):</p>
+<blockquote>
+<div><p>Edge-vector of squared radii values.</p>
+</div></blockquote>
+<p>conductance (array):</p>
+<blockquote>
+<div><p>The graph’s conductance unit.</p>
+</div></blockquote>
+</dd>
+<dt>Returns:</dt><dd><p>ndarray: The network’s edge conductivity matrix.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="hailhydro.flow_init.Flow.calc_configuration_flow">
+<span class="sig-name descname"><span class="pre">calc_configuration_flow</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/hailhydro/flow_init.html#Flow.calc_configuration_flow"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hailhydro.flow_init.Flow.calc_configuration_flow" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute the pressure/flow landscape, considering the current parameter
+and plexus condition.</p>
+<dl class="simple">
+<dt>Returns:</dt><dd><p>ndarray: Edge-vector of directed flow rates.
+ndarray: Edge-vector of pressure differences.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="hailhydro.flow_init.Flow.calc_cross_section_from_conductivity">
+<span class="sig-name descname"><span class="pre">calc_cross_section_from_conductivity</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">conductivity</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">conductance</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/hailhydro/flow_init.html#Flow.calc_cross_section_from_conductivity"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hailhydro.flow_init.Flow.calc_cross_section_from_conductivity" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute the squared radii values from the current conductivity matrix
+and conductance value.</p>
+<dl>
+<dt>Args:</dt><dd><p>conductivity (array):</p>
+<blockquote>
+<div><p>The network’s edge conductivity matrix.</p>
+</div></blockquote>
+<p>conductance (array):</p>
+<blockquote>
+<div><p>The graph’s conductance unit.</p>
+</div></blockquote>
+</dd>
+<dt>Returns:</dt><dd><p>ndarray: Edge-vector of squared radii values.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="hailhydro.flow_init.Flow.calc_flow">
+<span class="sig-name descname"><span class="pre">calc_flow</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">conduct</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">source</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/hailhydro/flow_init.html#Flow.calc_flow"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hailhydro.flow_init.Flow.calc_flow" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute the flow landscape, considering the current parameter
+and plexus condition.</p>
+<dl>
+<dt>Args:</dt><dd><p>conduct (array):</p>
+<blockquote>
+<div><p>The network’s edge conductivity matrix.</p>
+</div></blockquote>
+<p>source (array):</p>
+<blockquote>
+<div><p>The nodal source vector.</p>
+</div></blockquote>
+</dd>
+<dt>Returns:</dt><dd><p>ndarray: Edge-vector of directed flow rates.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="hailhydro.flow_init.Flow.calc_flow_from_pressure">
+<span class="sig-name descname"><span class="pre">calc_flow_from_pressure</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">conduct</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dP</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/hailhydro/flow_init.html#Flow.calc_flow_from_pressure"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hailhydro.flow_init.Flow.calc_flow_from_pressure" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute the flow landscape, considering the current parameter
+and plexus condition.</p>
+<dl>
+<dt>Args:</dt><dd><p>conduct (array):</p>
+<blockquote>
+<div><p>The network’s edge conductivity matrix.</p>
+</div></blockquote>
+<p>dP (array):</p>
+<blockquote>
+<div><p>Edge-vector of pressure-differences.</p>
+</div></blockquote>
+</dd>
+<dt>Returns:</dt><dd><p>ndarray: Edge-vector of directed flow rates.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="hailhydro.flow_init.Flow.calc_pressure">
+<span class="sig-name descname"><span class="pre">calc_pressure</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">conduct</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">source</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/hailhydro/flow_init.html#Flow.calc_pressure"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hailhydro.flow_init.Flow.calc_pressure" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute the pressure landscape, considering the current parameter
+and plexus condition.</p>
+<dl>
+<dt>Args:</dt><dd><p>conduct (array):</p>
+<blockquote>
+<div><p>The network’s edge conductivity matrix.</p>
+</div></blockquote>
+<p>source (array):</p>
+<blockquote>
+<div><p>The nodal source vector.</p>
+</div></blockquote>
+</dd>
+<dt>Returns:</dt><dd><p>ndarray: Edge-vector of pressure-differences.
+ndarray: Node-vector of pressures levels.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="hailhydro.flow_init.Flow.calc_sq_flow">
+<span class="sig-name descname"><span class="pre">calc_sq_flow</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">conduct</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">source</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/hailhydro/flow_init.html#Flow.calc_sq_flow"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hailhydro.flow_init.Flow.calc_sq_flow" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute the squared pressure/flow landscape, considering the current
+parameter and plexus condition.</p>
+<dl>
+<dt>Args:</dt><dd><p>conduct (array):</p>
+<blockquote>
+<div><p>The network’s edge conductivity matrix.</p>
+</div></blockquote>
+<p>source (array):</p>
+<blockquote>
+<div><p>The nodal source vector.</p>
+</div></blockquote>
+</dd>
+<dt>Returns:</dt><dd><p>ndarray: Edge-vector of squared flow rate values.
+ndarray: Edge-vector of squared pressure difference values.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="hailhydro.flow_init.Flow.find_roots">
+<span class="sig-name descname"><span class="pre">find_roots</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">G</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/hailhydro/flow_init.html#Flow.find_roots"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hailhydro.flow_init.Flow.find_roots" title="Permalink to this definition">¶</a></dt>
+<dd><p>Given a networkx graph, return all source-nodes (needs the nodal
+‘source’ attribute set).</p>
+<dl>
+<dt>Args:</dt><dd><p>G (networkx.Graph):</p>
+<blockquote>
+<div><p>A networkx graph.</p>
+</div></blockquote>
+</dd>
+<dt>Returns:</dt><dd><p>list:</p>
+<blockquote>
+<div><p>A list of root/source nodes of the given graph.</p>
+</div></blockquote>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="hailhydro.flow_init.Flow.find_sinks">
+<span class="sig-name descname"><span class="pre">find_sinks</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">G</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/hailhydro/flow_init.html#Flow.find_sinks"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hailhydro.flow_init.Flow.find_sinks" title="Permalink to this definition">¶</a></dt>
+<dd><p>Given a networkx graph, return all sink-nodes (needs the nodal
+‘source’ attribute set).</p>
+<dl>
+<dt>Args:</dt><dd><p>G (networkx.Graph):</p>
+<blockquote>
+<div><p>A networkx graph.</p>
+</div></blockquote>
+</dd>
+<dt>Returns:</dt><dd><p>list:</p>
+<blockquote>
+<div><p>A list of outlet/sink nodes of the given graph.</p>
+</div></blockquote>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="hailhydro.flow_init.Flow.init_flow">
+<span class="sig-name descname"><span class="pre">init_flow</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/hailhydro/flow_init.html#Flow.init_flow"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hailhydro.flow_init.Flow.init_flow" title="Permalink to this definition">¶</a></dt>
+<dd><p>Initialize flow variables, boundaries and handle constructor
+exceptions.</p>
+<dl>
+<dt>Raises:</dt><dd><p>Exception:</p>
+<blockquote>
+<div><p>Warning! Non-networkx type given for initialization, no
+internal circuit established.</p>
+</div></blockquote>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="hailhydro.flow_init.Flow.set_boundaries">
+<span class="sig-name descname"><span class="pre">set_boundaries</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/hailhydro/flow_init.html#Flow.set_boundaries"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hailhydro.flow_init.Flow.set_boundaries" title="Permalink to this definition">¶</a></dt>
+<dd><p>Explicitly set Neumann-boudaries and initial plexus as defined via
+‘pars_source/plexus’ parameters. Set internal output varaibles and
+incidence information.</p>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-hailhydro.flow_random">
+<span id="hailhydro-flow-random"></span><h2>hailhydro.flow_random<a class="headerlink" href="#module-hailhydro.flow_random" title="Permalink to this headline">¶</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="hailhydro.flow_random.FlowRandom">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">hailhydro.flow_random.</span></span><span class="sig-name descname"><span class="pre">FlowRandom</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">constr:</span> <span class="pre">networkx.classes.graph.Graph</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pars_source:</span> <span class="pre">dict</span> <span class="pre">=</span> <span class="pre">&lt;factory&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pars_plexus:</span> <span class="pre">dict</span> <span class="pre">=</span> <span class="pre">&lt;factory&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">flow_setting:</span> <span class="pre">dict</span> <span class="pre">=</span> <span class="pre">&lt;factory&gt;</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/hailhydro/flow_random.html#FlowRandom"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hailhydro.flow_random.FlowRandom" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#hailhydro.flow_init.Flow" title="hailhydro.flow_init.Flow"><code class="xref py py-class docutils literal notranslate"><span class="pre">hailhydro.flow_init.Flow</span></code></a></p>
+<p>The random flow class defines variables and methods for computing
+randomized-averaged Hagen-Poiseuille flows on kirchhoff networks.</p>
+<p>To be used in conjunction with ‘kirchhoff’ and ‘goflow’ in order to
+simulate flow-driven network morphogenesis. The implementation is based on
+the models of Corson (PRL, 2010) and Hu-Cai(PRL, 2013), which consider
+random flow patterns to emerge from a variation in sink strengths.</p>
+<dl>
+<dt>Attributes:</dt><dd><p>constr (networkx.Graph):</p>
+<blockquote>
+<div><p>A networkx graph or circuit to initilize a flow on.</p>
+</div></blockquote>
+<p>pars_source (dict):</p>
+<blockquote>
+<div><p>The boundary conditions (Neumann) determining the in/outlfow of
+fluid accross the network.</p>
+</div></blockquote>
+<p>pars_plexus (dict):</p>
+<blockquote>
+<div><p>The initial plexus, edge values of  conductivity, the flow is to
+be calculated on.</p>
+</div></blockquote>
+<p>flow_setting (dict):</p>
+<blockquote>
+<div><p>The setting for randomized flow, i.e. noise levels and
+correlations.</p>
+</div></blockquote>
+</dd>
+<dt>Methods:</dt><dd><p>init_flow():</p>
+<blockquote>
+<div><p>Initialize flow variables, boundaries and handle constructor
+exceptions.</p>
+</div></blockquote>
+<p>set_boundaries():</p>
+<blockquote>
+<div><p>Explicitly set Neumann-boudaries and initial plexus as defined via
+‘pars_source/plexus’ parameters. Set internal output varaibles and
+incidence information.</p>
+</div></blockquote>
+<p>find_roots(G):</p>
+<blockquote>
+<div><p>Given a networkx graph, return all source-nodes (needs the nodal
+‘source’ attribute set).</p>
+</div></blockquote>
+<p>find_sinks(G):</p>
+<blockquote>
+<div><p>Given a networkx graph, return all sink-nodes (needs the nodal
+‘source’ attribute set).</p>
+</div></blockquote>
+<p>alpha_omega(G, j):</p>
+<blockquote>
+<div><p>Return the start (alpha) and end(omega) node of an edge, for any
+given networkx graph with edge labeling j.</p>
+</div></blockquote>
+<p>calc_pressure(conduct, source):</p>
+<blockquote>
+<div><p>Compute the pressure landscape, considering the current parameter
+and plexus condition.</p>
+</div></blockquote>
+<p>calc_flow_from_pressure(conduct, dP):</p>
+<blockquote>
+<div><p>Compute the flow landscape, considering the current parameter
+and plexus condition.</p>
+</div></blockquote>
+<p>calc_flow(conduct, source):</p>
+<blockquote>
+<div><p>Compute the flow landscape, considering the current parameter
+and plexus condition.</p>
+</div></blockquote>
+<p>calc_sq_flow(sconduct, source):</p>
+<blockquote>
+<div><p>Compute the squared pressure/flow landscape, considering the
+current parameter and plexus condition.</p>
+</div></blockquote>
+<p>calc_cross_section_from_conductivity(conductivity, conductance):</p>
+<blockquote>
+<div><p>Compute the squared radii values from the current conductivity
+matrix and conductance value.</p>
+</div></blockquote>
+<p>calc_conductivity_from_cross_section(R_sq, conductance):</p>
+<blockquote>
+<div><p>Compute the conductivity matrix from the current squared radii
+values and conductance value.</p>
+</div></blockquote>
+<p>calc_configuration_flow():</p>
+<blockquote>
+<div><p>Compute the pressure/flow landscape, considering the current
+parameter and plexus condition.</p>
+</div></blockquote>
+<p>init_random():</p>
+<blockquote>
+<div><p>Initialize random-flow variables and boundaries.</p>
+</div></blockquote>
+<p>set_root_source_matrix(mean, variance):</p>
+<blockquote>
+<div><blockquote>
+<div><p>Set the (positive) parameters of deterministic and noisy flow
+levels.</p>
+</div></blockquote>
+<p>set_effective_source_matrix(noise):</p>
+<blockquote>
+<div><p>Set the effective fluctuation matrix with ggiven noise level.</p>
+</div></blockquote>
+</div></blockquote>
+<p>calc_sq_flow_effective(conduct):</p>
+<blockquote>
+<div><p>Compute the squared pressure/flow landscape, considering the
+current parameter and plexus condition (given the internal
+effective noise matrix was initialized).</p>
+</div></blockquote>
+<p>calc_sq_flow_root(conduct):</p>
+<blockquote>
+<div><p>Compute the squared pressure/flow landscape, considering the
+current parameter and plexus condition (given the internal sink
+mean and variance were initialized).</p>
+</div></blockquote>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="hailhydro.flow_random.FlowRandom.calc_sq_flow_effective">
+<span class="sig-name descname"><span class="pre">calc_sq_flow_effective</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">conduct</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/hailhydro/flow_random.html#FlowRandom.calc_sq_flow_effective"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hailhydro.flow_random.FlowRandom.calc_sq_flow_effective" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute the squared pressure/flow landscape, considering the current
+parameter and plexus condition (given the internal effective noise
+matrix was initialized).</p>
+<dl>
+<dt>Args:</dt><dd><p>conduct (array):</p>
+<blockquote>
+<div><p>The network’s edge conductivity matrix.</p>
+</div></blockquote>
+</dd>
+<dt>Returns:</dt><dd><p>ndarray: Edge-vector of squared pressure difference values.
+ndarray: Edge-vector of squared flow rate values.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="hailhydro.flow_random.FlowRandom.calc_sq_flow_root">
+<span class="sig-name descname"><span class="pre">calc_sq_flow_root</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">conduct</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/hailhydro/flow_random.html#FlowRandom.calc_sq_flow_root"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hailhydro.flow_random.FlowRandom.calc_sq_flow_root" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute the squared pressure/flow landscape, considering the current
+parameter and plexus condition (given the internal sink mean and
+variance were initialized).</p>
+<dl>
+<dt>Args:</dt><dd><p>conduct (array):</p>
+<blockquote>
+<div><p>The network’s edge conductivity matrix.</p>
+</div></blockquote>
+</dd>
+<dt>Returns:</dt><dd><p>ndarray: Edge-vector of squared pressure difference values.
+ndarray: Edge-vector of squared flow rate values.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="hailhydro.flow_random.FlowRandom.init_random">
+<span class="sig-name descname"><span class="pre">init_random</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/hailhydro/flow_random.html#FlowRandom.init_random"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hailhydro.flow_random.FlowRandom.init_random" title="Permalink to this definition">¶</a></dt>
+<dd><p>Initialize random-flow variables and boundaries.</p>
+<dl>
+<dt>Raises:</dt><dd><p>Exception:</p>
+<blockquote>
+<div><p>Warning flow landscape not set!</p>
+</div></blockquote>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="hailhydro.flow_random.FlowRandom.set_effective_source_matrix">
+<span class="sig-name descname"><span class="pre">set_effective_source_matrix</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">noise</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/hailhydro/flow_random.html#FlowRandom.set_effective_source_matrix"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hailhydro.flow_random.FlowRandom.set_effective_source_matrix" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set the effective fluctuation matrix with ggiven noise level.</p>
+<dl>
+<dt>Args:</dt><dd><p>noise (float):</p>
+<blockquote>
+<div><p>The ratio of squared mean and variance of sink strength.</p>
+</div></blockquote>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="hailhydro.flow_random.FlowRandom.set_root_source_matrix">
+<span class="sig-name descname"><span class="pre">set_root_source_matrix</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mean</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">variance</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/hailhydro/flow_random.html#FlowRandom.set_root_source_matrix"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hailhydro.flow_random.FlowRandom.set_root_source_matrix" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set the (positive) parameters of deterministic and noisy flow levels.</p>
+<dl>
+<dt>Args:</dt><dd><p>mean (float):</p>
+<blockquote>
+<div><p>The squared mean value of sink strength.</p>
+</div></blockquote>
+<p>variance (float):</p>
+<blockquote>
+<div><p>The variance value of sink strength.</p>
+</div></blockquote>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="hailhydro.flow_random.FlowReroute">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">hailhydro.flow_random.</span></span><span class="sig-name descname"><span class="pre">FlowReroute</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">constr:</span> <span class="pre">networkx.classes.graph.Graph</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pars_source:</span> <span class="pre">dict</span> <span class="pre">=</span> <span class="pre">&lt;factory&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pars_plexus:</span> <span class="pre">dict</span> <span class="pre">=</span> <span class="pre">&lt;factory&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">flow_setting:</span> <span class="pre">dict</span> <span class="pre">=</span> <span class="pre">&lt;factory&gt;</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/hailhydro/flow_random.html#FlowReroute"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hailhydro.flow_random.FlowReroute" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#hailhydro.flow_init.Flow" title="hailhydro.flow_init.Flow"><code class="xref py py-class docutils literal notranslate"><span class="pre">hailhydro.flow_init.Flow</span></code></a></p>
+<p>The random flow class defines variables and methods for computing
+randomized-averaged Hagen-Poiseuille flows on kirchhoff networks.</p>
+<p>To be used in conjunction with ‘kirchhoff’ and ‘goflow’ in order to
+simulate flow-driven network morphogenesis. The implementation is based on
+the models which assume flow variation to emerge from random edge failure
+(homogenous probability), e.g. see Katifori, PRL, 2010</p>
+<dl>
+<dt>Attributes:</dt><dd><p>constr (networkx.Graph):</p>
+<blockquote>
+<div><p>A networkx graph or circuit to initilize a flow on.</p>
+</div></blockquote>
+<p>pars_source (dict):</p>
+<blockquote>
+<div><p>The boundary conditions (Neumann) determining the in/outlfow of
+fluid accross the network.</p>
+</div></blockquote>
+<p>pars_plexus (dict):</p>
+<blockquote>
+<div><p>The initial plexus, edge values of  conductivity, the flow is to
+be calculated on.</p>
+</div></blockquote>
+<p>flow_setting (dict):</p>
+<blockquote>
+<div><p>The setting for randomized flow, i.e. noise levels and
+correlations.</p>
+</div></blockquote>
+</dd>
+<dt>Methods:</dt><dd><p>init_flow():</p>
+<blockquote>
+<div><p>Initialize flow variables, boundaries and handle constructor
+exceptions.</p>
+</div></blockquote>
+<p>set_boundaries():</p>
+<blockquote>
+<div><p>Explicitly set Neumann-boudaries and initial plexus as defined via
+‘pars_source/plexus’ parameters. Set internal output varaibles and
+incidence information.</p>
+</div></blockquote>
+<p>find_roots(G):</p>
+<blockquote>
+<div><p>Given a networkx graph, return all source-nodes (needs the nodal
+‘source’ attribute set).</p>
+</div></blockquote>
+<p>find_sinks(G):</p>
+<blockquote>
+<div><p>Given a networkx graph, return all sink-nodes (needs the nodal
+‘source’ attribute set).</p>
+</div></blockquote>
+<p>alpha_omega(G, j):</p>
+<blockquote>
+<div><p>Return the start (alpha) and end(omega) node of an edge, for any
+given networkx graph with edge labeling j.</p>
+</div></blockquote>
+<p>calc_pressure(conduct, source):</p>
+<blockquote>
+<div><p>Compute the pressure landscape, considering the current parameter
+and plexus condition.</p>
+</div></blockquote>
+<p>calc_flow_from_pressure(conduct, dP):</p>
+<blockquote>
+<div><p>Compute the flow landscape, considering the current parameter
+and plexus condition.</p>
+</div></blockquote>
+<p>calc_flow(conduct, source):</p>
+<blockquote>
+<div><p>Compute the flow landscape, considering the current parameter
+and plexus condition.</p>
+</div></blockquote>
+<p>calc_sq_flow(sconduct, source):</p>
+<blockquote>
+<div><p>Compute the squared pressure/flow landscape, considering the
+current parameter and plexus condition.</p>
+</div></blockquote>
+<p>calc_cross_section_from_conductivity(conductivity, conductance):</p>
+<blockquote>
+<div><p>Compute the squared radii values from the current conductivity
+matrix and conductance value.</p>
+</div></blockquote>
+<p>calc_conductivity_from_cross_section(R_sq, conductance):</p>
+<blockquote>
+<div><p>Compute the conductivity matrix from the current squared radii
+values and conductance value.</p>
+</div></blockquote>
+<p>calc_configuration_flow():</p>
+<blockquote>
+<div><p>Compute the pressure/flow landscape, considering the current
+parameter and plexus condition.</p>
+</div></blockquote>
+<p>initialize_broken_link():</p>
+<blockquote>
+<div><p>Initialize random-flow variables and boundaries, pre-generate broken
+edge states for faster sampling.</p>
+</div></blockquote>
+<p>generate_coherent_closure_deterministic(H, x):</p>
+<blockquote>
+<div><p>Generate a pruned version of a plexus, where a number ‘x’ of
+randomly sampled edges are failing during each realizsation.</p>
+</div></blockquote>
+<p>generate_coherent_closure():</p>
+<blockquote>
+<div><p>Generate a pruned version of a plexus, where a random number of
+edges are failing during each realizsation(each indivually with
+probability p).</p>
+</div></blockquote>
+<p>break_links(idx, conduct):</p>
+<blockquote>
+<div><p>Break/Fail the edges in list ‘idx’, by setting the respective
+conductivity values to numerically close to zero.</p>
+</div></blockquote>
+<p>get_sets():</p>
+<blockquote>
+<div><p>Sample a random set of network edges.</p>
+</div></blockquote>
+<p>calc_random_radii(idx, conduct):</p>
+<blockquote>
+<div><p>Compute the edge radii values, correpsonding to a randomly pruned
+conductivity matrix.</p>
+</div></blockquote>
+<p>calc_sq_flow(idx, conduct):</p>
+<blockquote>
+<div><p>Compute the squared pressure/flow landscape, considering a
+sequence of pruned conductivity matrices.</p>
+</div></blockquote>
+<p>calc_flows_mapping(graph_matrices):</p>
+<blockquote>
+<div><p>Compute the pressure/flow landscape, considering a sequence of
+conductivity matrix realizations.</p>
+</div></blockquote>
+<p>calc_sq_flow_avg(conduct):</p>
+<blockquote>
+<div><p>Compute the average squared pressure/flow landscape, by internally
+generating a random sequence of pruned conductivity matrix
+realizations.</p>
+</div></blockquote>
+<p>get_broken_links_asarray(idx, conduct):</p>
+<blockquote>
+<div><p>Compute a sequence of pruned conductivity matrices based on the
+failed edge sets ‘idx’.</p>
+</div></blockquote>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="hailhydro.flow_random.FlowReroute.break_links">
+<span class="sig-name descname"><span class="pre">break_links</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">idx</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">conduct</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/hailhydro/flow_random.html#FlowReroute.break_links"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hailhydro.flow_random.FlowReroute.break_links" title="Permalink to this definition">¶</a></dt>
+<dd><p>Break/Fail the edges in list ‘idx’, by setting the respective
+conductivity values to numerically close to zero.</p>
+<dl>
+<dt>Args:</dt><dd><p>idx (list):</p>
+<blockquote>
+<div><p>A list of edges to fail.</p>
+</div></blockquote>
+<p>conduct (array):</p>
+<blockquote>
+<div><p>The network’s conductivity matrix.</p>
+</div></blockquote>
+</dd>
+<dt>Returns:</dt><dd><p>ndarray:</p>
+<blockquote>
+<div><p>The network’s pruned conductivity matrix.</p>
+</div></blockquote>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="hailhydro.flow_random.FlowReroute.calc_flows_mapping">
+<span class="sig-name descname"><span class="pre">calc_flows_mapping</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">graph_matrices</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/hailhydro/flow_random.html#FlowReroute.calc_flows_mapping"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hailhydro.flow_random.FlowReroute.calc_flows_mapping" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute the pressure/flow landscape, considering a sequence of
+conductivity matrix realizations.</p>
+<dl>
+<dt>Args:</dt><dd><p>graph_matrices (iterable):</p>
+<blockquote>
+<div><p>An iterable of conductivity matrix realizations.</p>
+</div></blockquote>
+</dd>
+<dt>Returns:</dt><dd><p>list: A list of edge/nodal-vectors of effective flow/pressure
+landscape realizations.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="hailhydro.flow_random.FlowReroute.calc_random_radii">
+<span class="sig-name descname"><span class="pre">calc_random_radii</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">idx</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">conduct</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/hailhydro/flow_random.html#FlowReroute.calc_random_radii"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hailhydro.flow_random.FlowReroute.calc_random_radii" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute the edge radii values, correpsonding to a randomly pruned
+conductivity matrix.</p>
+<dl>
+<dt>Args:</dt><dd><p>idx (list):</p>
+<blockquote>
+<div><p>The list of failed edges.</p>
+</div></blockquote>
+<p>conduct (array):</p>
+<blockquote>
+<div><p>The network’s conductivity matrix.</p>
+</div></blockquote>
+</dd>
+<dt>Returns:</dt><dd><p>list:</p>
+<blockquote>
+<div><p>A list of radii values R, as well as radii functions R^2, R^3</p>
+</div></blockquote>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="hailhydro.flow_random.FlowReroute.calc_sq_flow">
+<span class="sig-name descname"><span class="pre">calc_sq_flow</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">idx</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">conduct</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/hailhydro/flow_random.html#FlowReroute.calc_sq_flow"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hailhydro.flow_random.FlowReroute.calc_sq_flow" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute the squared pressure/flow landscape, considering a sequence of
+pruned conductivity matrices.</p>
+<dl>
+<dt>Args:</dt><dd><p>idx (list):</p>
+<blockquote>
+<div><p>The list of failed edges.</p>
+</div></blockquote>
+<p>conduct (array):</p>
+<blockquote>
+<div><p>The network’s conductivity matrix.</p>
+</div></blockquote>
+</dd>
+<dt>Returns:</dt><dd><p>ndarray: Edge-vector of squared pressure difference values.
+ndarray: Edge-vector of squared flow rate values.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="hailhydro.flow_random.FlowReroute.calc_sq_flow_avg">
+<span class="sig-name descname"><span class="pre">calc_sq_flow_avg</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">conduct</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/hailhydro/flow_random.html#FlowReroute.calc_sq_flow_avg"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hailhydro.flow_random.FlowReroute.calc_sq_flow_avg" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute the average squared pressure/flow landscape, by internally
+generating a random sequence of pruned conductivity matrix
+realizations.</p>
+<dl>
+<dt>Args:</dt><dd><p>conduct (array):</p>
+<blockquote>
+<div><p>The network’s conductivity matrix.</p>
+</div></blockquote>
+</dd>
+<dt>Returns:</dt><dd><p>list: A list of average, squared flows, pressures as well as the
+average radii and dissipation values.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="hailhydro.flow_random.FlowReroute.generate_coherent_closure">
+<span class="sig-name descname"><span class="pre">generate_coherent_closure</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/hailhydro/flow_random.html#FlowReroute.generate_coherent_closure"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hailhydro.flow_random.FlowReroute.generate_coherent_closure" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generate a pruned version of a plexus, where a random number of
+edges are failing during each realizsation(each indivually with
+probability p).</p>
+<dl class="simple">
+<dt>Returns:</dt><dd><p>bool: Boolean on whether the pruned network is connected.
+list: The list of failed edges.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="hailhydro.flow_random.FlowReroute.generate_coherent_closure_deterministic">
+<span class="sig-name descname"><span class="pre">generate_coherent_closure_deterministic</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">H</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/hailhydro/flow_random.html#FlowReroute.generate_coherent_closure_deterministic"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hailhydro.flow_random.FlowReroute.generate_coherent_closure_deterministic" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generate a pruned version of a plexus, where a number ‘x’ of
+randomly sampled edges are failing during each realizsation.</p>
+<dl>
+<dt>Args:</dt><dd><p>H (networkx.Graph):</p>
+<blockquote>
+<div><p>A networkx graph.</p>
+</div></blockquote>
+<p>x (int):</p>
+<blockquote>
+<div><p>The pre-determined number of edge to fail.</p>
+</div></blockquote>
+</dd>
+<dt>Returns:</dt><dd><p>bool: Boolean on whether the pruned network is connected.
+list: The list of failed edges.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="hailhydro.flow_random.FlowReroute.get_broken_links_asarray">
+<span class="sig-name descname"><span class="pre">get_broken_links_asarray</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">idx</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">conduct</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/hailhydro/flow_random.html#FlowReroute.get_broken_links_asarray"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hailhydro.flow_random.FlowReroute.get_broken_links_asarray" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute a sequence of pruned conductivity matrices based on the failed
+edge sets ‘idx’.</p>
+<dl>
+<dt>Args:</dt><dd><p>idx (list):</p>
+<blockquote>
+<div><p>The list of failed edge sets.</p>
+</div></blockquote>
+<p>conduct (array):</p>
+<blockquote>
+<div><p>The network’s conductivity matrix.</p>
+</div></blockquote>
+</dd>
+<dt>Returns:</dt><dd><p>list: A list of pruned conductivity matrices.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="hailhydro.flow_random.FlowReroute.get_sets">
+<span class="sig-name descname"><span class="pre">get_sets</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/hailhydro/flow_random.html#FlowReroute.get_sets"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hailhydro.flow_random.FlowReroute.get_sets" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sample a random set of network edges.</p>
+<dl>
+<dt>Returns:</dt><dd><p>list:</p>
+<blockquote>
+<div><p>A list of randomly sampled edges.</p>
+</div></blockquote>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="hailhydro.flow_random.FlowReroute.initialize_broken_link">
+<span class="sig-name descname"><span class="pre">initialize_broken_link</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/hailhydro/flow_random.html#FlowReroute.initialize_broken_link"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hailhydro.flow_random.FlowReroute.initialize_broken_link" title="Permalink to this definition">¶</a></dt>
+<dd><p>Initialize random-flow variables and boundaries, pre-generate broken
+edge states for faster sampling.</p>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-hailhydro.flux_init">
+<span id="hailhydro-flux-init"></span><h2>hailhydro.flux_init<a class="headerlink" href="#module-hailhydro.flux_init" title="Permalink to this headline">¶</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="hailhydro.flux_init.Flux">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">hailhydro.flux_init.</span></span><span class="sig-name descname"><span class="pre">Flux</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">constr:</span> <span class="pre">networkx.classes.graph.Graph</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pars_source:</span> <span class="pre">dict</span> <span class="pre">=</span> <span class="pre">&lt;factory&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pars_plexus:</span> <span class="pre">dict</span> <span class="pre">=</span> <span class="pre">&lt;factory&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pars_solute:</span> <span class="pre">dict</span> <span class="pre">=</span> <span class="pre">&lt;factory&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pars_abs:</span> <span class="pre">dict</span> <span class="pre">=</span> <span class="pre">&lt;factory&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pars_geom:</span> <span class="pre">dict</span> <span class="pre">=</span> <span class="pre">&lt;factory&gt;</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/hailhydro/flux_init.html#Flux"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hailhydro.flux_init.Flux" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#hailhydro.flow_init.Flow" title="hailhydro.flow_init.Flow"><code class="xref py py-class docutils literal notranslate"><span class="pre">hailhydro.flow_init.Flow</span></code></a></p>
+<p>The flux class defines variables and methods for computing Hagen-Poiseuille
+flows on kirchhoff networks. Furthermore it enables to compute simple,
+stationary advection-diffusion+absorption problems and concentration
+landscapes.</p>
+<p>To be used in conjunction with ‘kirchhoff’ and ‘goflow’ in order to
+simulate flow-driven network morphogenesis.</p>
+<dl>
+<dt>Attributes:</dt><dd><p>constr (networkx.Graph):</p>
+<blockquote>
+<div><p>A networkx graph or circuit to initilize a flow on.</p>
+</div></blockquote>
+<p>pars_source (dict):</p>
+<blockquote>
+<div><p>The boundary conditions (Neumann) determining the in/outlfow of
+fluid accross the network.</p>
+</div></blockquote>
+<p>pars_plexus (dict):</p>
+<blockquote>
+<div><p>The initial plexus, edge values of  conductivity, the flow is to
+be calculated on.</p>
+</div></blockquote>
+<p>pars_solute (dict):</p>
+<blockquote>
+<div><p>The initial plexus, edge values of  conductivity, the flow is to
+be calculated on.</p>
+</div></blockquote>
+<p>pars_abs (dict):</p>
+<blockquote>
+<div><p>The initial plexus, edge values of  conductivity, the flow is to
+be calculated on.</p>
+</div></blockquote>
+<p>pars_geom (dict):</p>
+<blockquote>
+<div><p>The initial plexus, edge values of  conductivity, the flow is to
+be calculated on.</p>
+</div></blockquote>
+<p>dict_in (dict):</p>
+<blockquote>
+<div><p>The initial plexus, edge values of  conductivity, the flow is to
+be calculated on.</p>
+</div></blockquote>
+<p>dict_out (dict):</p>
+<blockquote>
+<div><p>The initial plexus, edge values of  conductivity, the flow is to
+be calculated on.</p>
+</div></blockquote>
+<p>dict_edges (dict):</p>
+<blockquote>
+<div><p>The initial plexus, edge values of  conductivity, the flow is to
+be calculated on.</p>
+</div></blockquote>
+<p>dict_node_out (dict):</p>
+<blockquote>
+<div><p>The initial plexus, edge values of  conductivity, the flow is to
+be calculated on.</p>
+</div></blockquote>
+<p>dict_node_in (dict):</p>
+<blockquote>
+<div><p>The initial plexus, edge values of  conductivity, the flow is to
+be calculated on.</p>
+</div></blockquote>
+</dd>
+<dt>Methods:</dt><dd><p>init_flow():</p>
+<blockquote>
+<div><p>Initialize flow variables, boundaries and handle constructor
+exceptions.</p>
+</div></blockquote>
+<p>set_boundaries():</p>
+<blockquote>
+<div><p>Explicitly set Neumann-boudaries and initial plexus as defined via
+‘pars_source/plexus’ parameters. Set internal output varaibles and
+incidence information.</p>
+</div></blockquote>
+<p>find_roots(G):</p>
+<blockquote>
+<div><p>Given a networkx graph, return all source-nodes (needs the nodal
+‘source’ attribute set).</p>
+</div></blockquote>
+<p>find_sinks(G):</p>
+<blockquote>
+<div><p>Given a networkx graph, return all sink-nodes (needs the nodal
+‘source’ attribute set).</p>
+</div></blockquote>
+<p>alpha_omega(G, j):</p>
+<blockquote>
+<div><p>Return the start (alpha) and end(omega) node of an edge, for any
+given networkx graph with edge labeling j.</p>
+</div></blockquote>
+<p>calc_pressure(conduct, source):</p>
+<blockquote>
+<div><p>Compute the pressure landscape, considering the current parameter
+and plexus condition.</p>
+</div></blockquote>
+<p>calc_flow_from_pressure(conduct, dP):</p>
+<blockquote>
+<div><p>Compute the flow landscape, considering the current parameter
+and plexus condition.</p>
+</div></blockquote>
+<p>calc_flow(conduct, source):</p>
+<blockquote>
+<div><p>Compute the flow landscape, considering the current parameter
+and plexus condition.</p>
+</div></blockquote>
+<p>calc_sq_flow(sconduct, source):</p>
+<blockquote>
+<div><p>Compute the squared pressure/flow landscape, considering the
+current parameter and plexus condition.</p>
+</div></blockquote>
+<p>calc_cross_section_from_conductivity(conductivity, conductance):</p>
+<blockquote>
+<div><p>Compute the squared radii values from the current conductivity
+matrix and conductance value.</p>
+</div></blockquote>
+<p>calc_conductivity_from_cross_section(R_sq, conductance):</p>
+<blockquote>
+<div><p>Compute the conductivity matrix from the current squared radii
+values and conductance value.</p>
+</div></blockquote>
+<p>calc_configuration_flow():</p>
+<blockquote>
+<div><p>Compute the pressure/flow landscape, considering the current
+parameter and plexus condition.</p>
+</div></blockquote>
+<p>init_flux():</p>
+<blockquote>
+<div><p>Initialize internal flux variables, boundaries and handle
+constructor exceptions.</p>
+</div></blockquote>
+<p>init_parameters():</p>
+<blockquote>
+<div><p>Initialize internal variables and containers.</p>
+</div></blockquote>
+<p>set_solute_boundaries():</p>
+<blockquote>
+<div><p>Set flux parameters and boundaries.</p>
+</div></blockquote>
+<p>calc_diff_flux(R_sq):</p>
+<blockquote>
+<div><p>Compute the reweighted cross-section given an advection-diffusion
+problem.</p>
+</div></blockquote>
+<p>calc_velocity_from_flowrate(Q, R_sq):</p>
+<blockquote>
+<div><p>Compute the effective flow velocities.</p>
+</div></blockquote>
+<p>calc_peclet(V):</p>
+<blockquote>
+<div><p>Compute the Peclet numbers.</p>
+</div></blockquote>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="hailhydro.flux_init.Flux.calc_diff_flux">
+<span class="sig-name descname"><span class="pre">calc_diff_flux</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">R_sq</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/hailhydro/flux_init.html#Flux.calc_diff_flux"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hailhydro.flux_init.Flux.calc_diff_flux" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute the reweighted cross-section given an advection-diffusion
+problem.</p>
+<dl>
+<dt>Args:</dt><dd><p>R_sq (array):</p>
+<blockquote>
+<div><p>The squared edge radii values.</p>
+</div></blockquote>
+</dd>
+<dt>Returns:</dt><dd><p>ndarray:</p>
+<blockquote>
+<div><p>Edge-vector of effective diffusion flux across the cross-section.</p>
+</div></blockquote>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="hailhydro.flux_init.Flux.calc_peclet">
+<span class="sig-name descname"><span class="pre">calc_peclet</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">V</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/hailhydro/flux_init.html#Flux.calc_peclet"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hailhydro.flux_init.Flux.calc_peclet" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute the Peclet numbers.</p>
+<dl>
+<dt>Args:</dt><dd><p>V (array):</p>
+<blockquote>
+<div><p>Edge-vector of cross-section averaged flow velocities.</p>
+</div></blockquote>
+</dd>
+<dt>Returns:</dt><dd><p>ndarray: Edge-vector of peclet numbers.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="hailhydro.flux_init.Flux.calc_velocity_from_flowrate">
+<span class="sig-name descname"><span class="pre">calc_velocity_from_flowrate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">Q</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">R_sq</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/hailhydro/flux_init.html#Flux.calc_velocity_from_flowrate"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hailhydro.flux_init.Flux.calc_velocity_from_flowrate" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute the effective flow velocities.</p>
+<dl>
+<dt>Args:</dt><dd><p>Q (array):</p>
+<blockquote>
+<div><p>Edge-vector of directed flow rates.</p>
+</div></blockquote>
+<p>R_sq (array):</p>
+<blockquote>
+<div><p>The squared edge radii values.</p>
+</div></blockquote>
+</dd>
+<dt>Returns:</dt><dd><p>ndarray: Edge-vector of cross-section averaged flow velocities.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="hailhydro.flux_init.Flux.init_flux">
+<span class="sig-name descname"><span class="pre">init_flux</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/hailhydro/flux_init.html#Flux.init_flux"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hailhydro.flux_init.Flux.init_flux" title="Permalink to this definition">¶</a></dt>
+<dd><p>Initialize internal flux variables, boundaries and handle constructor
+exceptions.</p>
+<dl>
+<dt>Raises:</dt><dd><p>Exception:</p>
+<blockquote>
+<div><p>Warning! Non-networkx type given for initialization, no
+internal circuit established.</p>
+</div></blockquote>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="hailhydro.flux_init.Flux.init_parameters">
+<span class="sig-name descname"><span class="pre">init_parameters</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/hailhydro/flux_init.html#Flux.init_parameters"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hailhydro.flux_init.Flux.init_parameters" title="Permalink to this definition">¶</a></dt>
+<dd><p>Initialize internal variables and containers.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="hailhydro.flux_init.Flux.set_solute_boundaries">
+<span class="sig-name descname"><span class="pre">set_solute_boundaries</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/hailhydro/flux_init.html#Flux.set_solute_boundaries"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hailhydro.flux_init.Flux.set_solute_boundaries" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set flux parameters and boundaries.</p>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-hailhydro.flux_overflow">
+<span id="hailhydro-flux-overflow"></span><h2>hailhydro.flux_overflow<a class="headerlink" href="#module-hailhydro.flux_overflow" title="Permalink to this headline">¶</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="hailhydro.flux_overflow.Overflow">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">hailhydro.flux_overflow.</span></span><span class="sig-name descname"><span class="pre">Overflow</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">constr:</span> <span class="pre">networkx.classes.graph.Graph</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pars_source:</span> <span class="pre">dict</span> <span class="pre">=</span> <span class="pre">&lt;factory&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pars_plexus:</span> <span class="pre">dict</span> <span class="pre">=</span> <span class="pre">&lt;factory&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pars_solute:</span> <span class="pre">dict</span> <span class="pre">=</span> <span class="pre">&lt;factory&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pars_abs:</span> <span class="pre">dict</span> <span class="pre">=</span> <span class="pre">&lt;factory&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pars_geom:</span> <span class="pre">dict</span> <span class="pre">=</span> <span class="pre">&lt;factory&gt;</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/hailhydro/flux_overflow.html#Overflow"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hailhydro.flux_overflow.Overflow" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#hailhydro.flux_init.Flux" title="hailhydro.flux_init.Flux"><code class="xref py py-class docutils literal notranslate"><span class="pre">hailhydro.flux_init.Flux</span></code></a></p>
+<p>The flux class defines variables and methods for computing Hagen-Poiseuille
+flows on kirchhoff networks. Furthermore it enables to compute simple,
+stationary advection-diffusion+absorption problems and concentration
+landscapes.</p>
+<p>To be used in conjunction with ‘kirchhoff’ and ‘goflow’ in order to
+simulate flow-driven network morphogenesis. This class contains manually
+implemented handling for large Peclet numbers.</p>
+<dl>
+<dt>Attributes:</dt><dd><p>constr (networkx.Graph):</p>
+<blockquote>
+<div><p>A networkx graph or circuit to initilize a flow on.</p>
+</div></blockquote>
+<p>pars_source (dict):</p>
+<blockquote>
+<div><p>The boundary conditions (Neumann) determining the in/outlfow of
+fluid accross the network.</p>
+</div></blockquote>
+<p>pars_plexus (dict):</p>
+<blockquote>
+<div><p>The initial plexus, edge values of  conductivity, the flow is to
+be calculated on.</p>
+</div></blockquote>
+<p>pars_solute (dict):</p>
+<blockquote>
+<div><p>The initial plexus, edge values of  conductivity, the flow is to
+be calculated on.</p>
+</div></blockquote>
+<p>pars_abs (dict):</p>
+<blockquote>
+<div><p>The initial plexus, edge values of  conductivity, the flow is to
+be calculated on.</p>
+</div></blockquote>
+<p>pars_geom (dict):</p>
+<blockquote>
+<div><p>The initial plexus, edge values of  conductivity, the flow is to
+be calculated on.</p>
+</div></blockquote>
+<p>dict_in (dict):</p>
+<blockquote>
+<div><p>The initial plexus, edge values of  conductivity, the flow is to
+be calculated on.</p>
+</div></blockquote>
+<p>dict_out (dict):</p>
+<blockquote>
+<div><p>The initial plexus, edge values of  conductivity, the flow is to
+be calculated on.</p>
+</div></blockquote>
+<p>dict_edges (dict):</p>
+<blockquote>
+<div><p>The initial plexus, edge values of  conductivity, the flow is to
+be calculated on.</p>
+</div></blockquote>
+<p>dict_node_out (dict):</p>
+<blockquote>
+<div><p>The initial plexus, edge values of  conductivity, the flow is to
+be calculated on.</p>
+</div></blockquote>
+<p>dict_node_in (dict):</p>
+<blockquote>
+<div><p>The initial plexus, edge values of  conductivity, the flow is to
+be calculated on.</p>
+</div></blockquote>
+</dd>
+<dt>Methods:</dt><dd><p>init_flow():</p>
+<blockquote>
+<div><p>Initialize flow variables, boundaries and handle constructor
+exceptions.</p>
+</div></blockquote>
+<p>set_boundaries():</p>
+<blockquote>
+<div><p>Explicitly set Neumann-boudaries and initial plexus as defined via
+‘pars_source/plexus’ parameters. Set internal output varaibles and
+incidence information.</p>
+</div></blockquote>
+<p>find_roots(G):</p>
+<blockquote>
+<div><p>Given a networkx graph, return all source-nodes (needs the nodal
+‘source’ attribute set).</p>
+</div></blockquote>
+<p>find_sinks(G):</p>
+<blockquote>
+<div><p>Given a networkx graph, return all sink-nodes (needs the nodal
+‘source’ attribute set).</p>
+</div></blockquote>
+<p>alpha_omega(G, j):</p>
+<blockquote>
+<div><p>Return the start (alpha) and end(omega) node of an edge, for any
+given networkx graph with edge labeling j.</p>
+</div></blockquote>
+<p>calc_pressure(conduct, source):</p>
+<blockquote>
+<div><p>Compute the pressure landscape, considering the current parameter
+and plexus condition.</p>
+</div></blockquote>
+<p>calc_flow_from_pressure(conduct, dP):</p>
+<blockquote>
+<div><p>Compute the flow landscape, considering the current parameter
+and plexus condition.</p>
+</div></blockquote>
+<p>calc_flow(conduct, source):</p>
+<blockquote>
+<div><p>Compute the flow landscape, considering the current parameter
+and plexus condition.</p>
+</div></blockquote>
+<p>calc_sq_flow(sconduct, source):</p>
+<blockquote>
+<div><p>Compute the squared pressure/flow landscape, considering the
+current parameter and plexus condition.</p>
+</div></blockquote>
+<p>calc_cross_section_from_conductivity(conductivity, conductance):</p>
+<blockquote>
+<div><p>Compute the squared radii values from the current conductivity
+matrix and conductance value.</p>
+</div></blockquote>
+<p>calc_conductivity_from_cross_section(R_sq, conductance):</p>
+<blockquote>
+<div><p>Compute the conductivity matrix from the current squared radii
+values and conductance value.</p>
+</div></blockquote>
+<p>calc_configuration_flow():</p>
+<blockquote>
+<div><p>Compute the pressure/flow landscape, considering the current
+parameter and plexus condition.</p>
+</div></blockquote>
+<p>init_flux():</p>
+<blockquote>
+<div><p>Initialize internal flux variables, boundaries and handle
+constructor exceptions.</p>
+</div></blockquote>
+<p>init_parameters():</p>
+<blockquote>
+<div><p>Initialize internal variables and containers.</p>
+</div></blockquote>
+<p>set_solute_boundaries():</p>
+<blockquote>
+<div><p>Set flux parameters and boundaries.</p>
+</div></blockquote>
+<p>calc_diff_flux(R_sq):</p>
+<blockquote>
+<div><p>Compute the reweighted cross-section given an advection-diffusion
+problem.</p>
+</div></blockquote>
+<p>calc_velocity_from_flowrate(Q, R_sq):</p>
+<blockquote>
+<div><p>Compute the effective flow velocities.</p>
+</div></blockquote>
+<p>calc_peclet(V):</p>
+<blockquote>
+<div><p>Compute the Peclet numbers.</p>
+</div></blockquote>
+<p>solve_absorbing_boundary():</p>
+<blockquote>
+<div><p>Compute the concentration landscape for the absorbing boundary
+problem.</p>
+</div></blockquote>
+<p>update_transport_matrix(R):</p>
+<blockquote>
+<div><p>Update the effective transport matrix.</p>
+</div></blockquote>
+<p>compute_flux_PeAbs():</p>
+<blockquote>
+<div><p>Compute the effective exponential factors for the stationary
+concentraiton problem.</p>
+</div></blockquote>
+<p>compute_flux_idx():</p>
+<blockquote>
+<div><p>Identify regimes of Peclet numbers and the respective indices of
+edges.</p>
+</div></blockquote>
+<p>compute_flux_exp(x, z, idx_pack):</p>
+<blockquote>
+<div><p>Computes auxillary exponential factors for transport matrix
+evaluation.</p>
+</div></blockquote>
+<p>calc_absorption():</p>
+<blockquote>
+<div><p>Computes total absorption lanscape of the advection-diffusion
+network.</p>
+</div></blockquote>
+<p>get_concentrations_from_edges():</p>
+<blockquote>
+<div><p>Returns the current start and end concentraiton values of each
+individual edge.</p>
+</div></blockquote>
+<p>calc_absorption_jacobian():</p>
+<blockquote>
+<div><p>Compute total edge’s absorption Jacobian matrix (with regard to
+radial changes).</p>
+</div></blockquote>
+<p>get_alpha_omega_from_edges():</p>
+<blockquote>
+<div><p>Returns the start(alpha) and end(omega) node of all network edges.</p>
+</div></blockquote>
+<p>calc_absorption_jacobian_coefficients_1(<a href="#id1"><span class="problematic" id="id2">*</span></a>args):</p>
+<blockquote>
+<div><p>Caluclation of intermediate transport matrix and Jacobain
+components.</p>
+</div></blockquote>
+<p>calc_abs_jac_coeff_11(x, pars):</p>
+<blockquote>
+<div><p>Auxillarycilary function for sequenced ndarray multiplication.</p>
+</div></blockquote>
+<p>calc_absorption_jacobian_coefficients_2(<a href="#id3"><span class="problematic" id="id4">*</span></a>args):</p>
+<blockquote>
+<div><p>Caluclation of intermediate transport matrix and Jacobain
+omponents.</p>
+</div></blockquote>
+<p>calc_flux_jacobian():</p>
+<blockquote>
+<div><p>Compute the flow components of the absorption Jacobian matrix.</p>
+</div></blockquote>
+<p>calc_cross_section_jacobian():</p>
+<blockquote>
+<div><p>Compute the radial Jacobian component of the absorption Jacobian
+matrix.</p>
+</div></blockquote>
+<p>calc_concentration_jacobian(J_PE, c):</p>
+<blockquote>
+<div><p>Compute the concentration Jacobian component of the absorption
+Jacobian matrix.</p>
+</div></blockquote>
+<p>calc_concentration_jacobian_coefficients(c):</p>
+<blockquote>
+<div><p>Auxillary function to compute intermediate coefficients for
+concentration Jacobian matrix evaluation.</p>
+</div></blockquote>
+<p>flux_sum_1(i, z, f2):</p>
+<blockquote>
+<div><p>Auxillary function for intermediate coefficient computation.</p>
+</div></blockquote>
+<p>flux_sum_2(i, z, A, f4):</p>
+<blockquote>
+<div><p>Auxillary function for intermediate coefficient computation.</p>
+</div></blockquote>
+<p>calc_inv_B(c):</p>
+<blockquote>
+<div><p>Return the reduced concentration vector and inverted transport
+matrix.</p>
+</div></blockquote>
+<p>calc_inc_jac_diag(flux_sum_1, flux_sum_2, pars):</p>
+<blockquote>
+<div><p>Auxillary function to compute intermediate Jacobian components for
+absoprtion Jacobian matrix.</p>
+</div></blockquote>
+<p>calc_incidence_jacobian_dev(JB_eff, dict_coeff, pars):</p>
+<blockquote>
+<div><p>Auxillary function to merge intermediate Jacobian components into
+effective absoprtion Jacobian matrix.</p>
+</div></blockquote>
+<p>evaluate_jacobian(j, J_C, JB_eff, inv_B, c):</p>
+<blockquote>
+<div><p>Update the jth row of the current concentration Jacobian matrix.</p>
+</div></blockquote>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="hailhydro.flux_overflow.Overflow.calc_abs_jac_coeff_11">
+<span class="sig-name descname"><span class="pre">calc_abs_jac_coeff_11</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pars</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/hailhydro/flux_overflow.html#Overflow.calc_abs_jac_coeff_11"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hailhydro.flux_overflow.Overflow.calc_abs_jac_coeff_11" title="Permalink to this definition">¶</a></dt>
+<dd><p>Auxillarycilary function for sequenced ndarray multiplication.</p>
+<dl>
+<dt>Args:</dt><dd><p>x (array):</p>
+<blockquote>
+<div><p>An array as constant target for numpy multiplication.</p>
+</div></blockquote>
+<p>pars (iterable):</p>
+<blockquote>
+<div><p>An sequence of arrays for numpy multiplication.</p>
+</div></blockquote>
+</dd>
+<dt>Returns:</dt><dd><p>list: A list of ndarray products.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="hailhydro.flux_overflow.Overflow.calc_absorption">
+<span class="sig-name descname"><span class="pre">calc_absorption</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/hailhydro/flux_overflow.html#Overflow.calc_absorption"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hailhydro.flux_overflow.Overflow.calc_absorption" title="Permalink to this definition">¶</a></dt>
+<dd><p>Computes total absorption lanscape of the advection-diffusion network.</p>
+<dl class="simple">
+<dt>Returns:</dt><dd><p>ndarray: Edge-vector of total absorption rates.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="hailhydro.flux_overflow.Overflow.calc_absorption_jacobian">
+<span class="sig-name descname"><span class="pre">calc_absorption_jacobian</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/hailhydro/flux_overflow.html#Overflow.calc_absorption_jacobian"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hailhydro.flux_overflow.Overflow.calc_absorption_jacobian" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute total edge’s absorption Jacobian matrix (with regard to radial
+changes).</p>
+<dl class="simple">
+<dt>Returns:</dt><dd><p>ndarray: The Jacobian matrix (with regard to radial changes).</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="hailhydro.flux_overflow.Overflow.calc_absorption_jacobian_coefficients_1">
+<span class="sig-name descname"><span class="pre">calc_absorption_jacobian_coefficients_1</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/hailhydro/flux_overflow.html#Overflow.calc_absorption_jacobian_coefficients_1"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hailhydro.flux_overflow.Overflow.calc_absorption_jacobian_coefficients_1" title="Permalink to this definition">¶</a></dt>
+<dd><p>Caluclation of intermediate transport matrix and Jacobain components.</p>
+<dl>
+<dt>Args:</dt><dd><p>args (iterable):</p>
+<blockquote>
+<div><p>A sequence of arguments for caluclations of intermediate
+transport matrix and Jacobain components.</p>
+</div></blockquote>
+</dd>
+<dt>Returns:</dt><dd><p>ndarray: Edge-vector of intermediate components (UP)
+ndarray: Edge-vector of intermediate components (DOWN)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="hailhydro.flux_overflow.Overflow.calc_absorption_jacobian_coefficients_2">
+<span class="sig-name descname"><span class="pre">calc_absorption_jacobian_coefficients_2</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/hailhydro/flux_overflow.html#Overflow.calc_absorption_jacobian_coefficients_2"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hailhydro.flux_overflow.Overflow.calc_absorption_jacobian_coefficients_2" title="Permalink to this definition">¶</a></dt>
+<dd><p>Caluclation of intermediate transport matrix and Jacobain components.</p>
+<dl>
+<dt>Args:</dt><dd><p>args (iterable):</p>
+<blockquote>
+<div><p>A sequence of arguments for caluclations of intermediate
+transport matrix and Jacobain components.</p>
+</div></blockquote>
+</dd>
+<dt>Returns:</dt><dd><p>ndarray: Edge-vector of intermediate components (UP)
+ndarray: Edge-vector of intermediate components (DOWN)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="hailhydro.flux_overflow.Overflow.calc_concentration_jacobian">
+<span class="sig-name descname"><span class="pre">calc_concentration_jacobian</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">J_PE</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">c</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/hailhydro/flux_overflow.html#Overflow.calc_concentration_jacobian"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hailhydro.flux_overflow.Overflow.calc_concentration_jacobian" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute the concentration Jacobian component of the absorption Jacobian
+matrix.</p>
+<dl>
+<dt>Args:</dt><dd><p>J_PE (array):</p>
+<blockquote>
+<div><p>The Pleclet number Jacobian matrix (with regard to radial
+changes).</p>
+</div></blockquote>
+<p>c (array):</p>
+<blockquote>
+<div><p>The nodal concentration vector.</p>
+</div></blockquote>
+</dd>
+<dt>Returns:</dt><dd><p>ndarray:</p>
+<blockquote>
+<div><p>The concentration Jacobian matrix (with regard to radial
+changes).</p>
+</div></blockquote>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="hailhydro.flux_overflow.Overflow.calc_concentration_jacobian_coefficients">
+<span class="sig-name descname"><span class="pre">calc_concentration_jacobian_coefficients</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">c</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/hailhydro/flux_overflow.html#Overflow.calc_concentration_jacobian_coefficients"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hailhydro.flux_overflow.Overflow.calc_concentration_jacobian_coefficients" title="Permalink to this definition">¶</a></dt>
+<dd><p>Auxillary function to compute intermediate coefficients for
+concentration Jacobian matrix evaluation.</p>
+<dl>
+<dt>Args:</dt><dd><p>c (array):</p>
+<blockquote>
+<div><p>The nodal concentration vector.</p>
+</div></blockquote>
+</dd>
+<dt>Returns:</dt><dd><p>dict: A series of coefficient arrays for further numerics.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="hailhydro.flux_overflow.Overflow.calc_cross_section_jacobian">
+<span class="sig-name descname"><span class="pre">calc_cross_section_jacobian</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/hailhydro/flux_overflow.html#Overflow.calc_cross_section_jacobian"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hailhydro.flux_overflow.Overflow.calc_cross_section_jacobian" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute the radial Jacobian component of the absorption Jacobian
+matrix.</p>
+<dl class="simple">
+<dt>Returns:</dt><dd><p>ndarray: The cross-section Jacobian matrix (with regard to radial
+changes).</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="hailhydro.flux_overflow.Overflow.calc_flux_jacobian">
+<span class="sig-name descname"><span class="pre">calc_flux_jacobian</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/hailhydro/flux_overflow.html#Overflow.calc_flux_jacobian"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hailhydro.flux_overflow.Overflow.calc_flux_jacobian" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute the flow components of the absorption Jacobian matrix.</p>
+<dl>
+<dt>Returns:</dt><dd><p>ndarray:</p>
+<blockquote>
+<div><p>The Pleclet number Jacobian matrix (with regard to radial
+changes).</p>
+</div></blockquote>
+<p>ndarray:</p>
+<blockquote>
+<div><p>The flow rate Jacobian matrix (with regard to radial changes).</p>
+</div></blockquote>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="hailhydro.flux_overflow.Overflow.calc_inc_jac_diag">
+<span class="sig-name descname"><span class="pre">calc_inc_jac_diag</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">flux_sum_1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">flux_sum_2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pars</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/hailhydro/flux_overflow.html#Overflow.calc_inc_jac_diag"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hailhydro.flux_overflow.Overflow.calc_inc_jac_diag" title="Permalink to this definition">¶</a></dt>
+<dd><p>Auxillary function to compute intermediate Jacobian components for
+absoprtion Jacobian matrix.</p>
+<dl>
+<dt>Args:</dt><dd><p>flux_sum1 (array):</p>
+<blockquote>
+<div><p>Auxillary edge-vector.</p>
+</div></blockquote>
+<p>flux_sum2 (array):</p>
+<blockquote>
+<div><p>Auxillary edge-vector.</p>
+</div></blockquote>
+<p>pars(iterable):</p>
+<blockquote>
+<div><p>A list of Jacobian factor components.</p>
+</div></blockquote>
+</dd>
+<dt>Returns:</dt><dd><p>ndarray: Intermediate absorption Jacobian matrix.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="hailhydro.flux_overflow.Overflow.calc_incidence_jacobian_dev">
+<span class="sig-name descname"><span class="pre">calc_incidence_jacobian_dev</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">JB_eff</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dict_coeff</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pars</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/hailhydro/flux_overflow.html#Overflow.calc_incidence_jacobian_dev"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hailhydro.flux_overflow.Overflow.calc_incidence_jacobian_dev" title="Permalink to this definition">¶</a></dt>
+<dd><p>Auxillary function to merge intermediate Jacobian components into
+effective absoprtion Jacobian matrix.</p>
+<dl>
+<dt>Args:</dt><dd><p>JB_eff (ndarray):</p>
+<blockquote>
+<div><p>Intermediate absorption Jacobian matrix.</p>
+</div></blockquote>
+<p>dict_coeff (dict):</p>
+<blockquote>
+<div><p>A series of coefficient arrays for further numerics.</p>
+</div></blockquote>
+<p>pars(iterable):</p>
+<blockquote>
+<div><p>A list of Jacobian factor components.</p>
+</div></blockquote>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="hailhydro.flux_overflow.Overflow.calc_inv_B">
+<span class="sig-name descname"><span class="pre">calc_inv_B</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">c</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/hailhydro/flux_overflow.html#Overflow.calc_inv_B"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hailhydro.flux_overflow.Overflow.calc_inv_B" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the reduced concentration vector and inverted transport matrix.</p>
+<dl>
+<dt>Args:</dt><dd><p>c(array):</p>
+<blockquote>
+<div><p>The nodal concentration vector.</p>
+</div></blockquote>
+</dd>
+<dt>Returns:</dt><dd><p>ndarray: Inverse, reduced transport matrix
+ndarray: Reduced concentration vector</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="hailhydro.flux_overflow.Overflow.compute_flux_PeAbs">
+<span class="sig-name descname"><span class="pre">compute_flux_PeAbs</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/hailhydro/flux_overflow.html#Overflow.compute_flux_PeAbs"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hailhydro.flux_overflow.Overflow.compute_flux_PeAbs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute the effective exponential factors for the stationary
+concentraiton problem.</p>
+<dl class="simple">
+<dt>Returns:</dt><dd><p>ndarray: Edge-vector of effective exponents.
+ndarray: Edge-vector of Peclet numbers*0.5.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="hailhydro.flux_overflow.Overflow.compute_flux_exp">
+<span class="sig-name descname"><span class="pre">compute_flux_exp</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">z</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">idx_pack</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/hailhydro/flux_overflow.html#Overflow.compute_flux_exp"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hailhydro.flux_overflow.Overflow.compute_flux_exp" title="Permalink to this definition">¶</a></dt>
+<dd><p>Computes auxillary exponential factors for transport matrix evaluation.</p>
+<dl>
+<dt>Args:</dt><dd><p>x (array):</p>
+<blockquote>
+<div><p>Edge-vector of effective exponents.</p>
+</div></blockquote>
+<p>z (array):</p>
+<blockquote>
+<div><p>Edge-vector of Peclet numbers*0.5.</p>
+</div></blockquote>
+<p>idx_pack (list):</p>
+<blockquote>
+<div><p>List of index sets, for handling limit cases for Peclet number
+regimes.</p>
+</div></blockquote>
+</dd>
+<dt>Returns:</dt><dd><p>ndarray: Edge-vector of exponential parameters (UP)
+ndarray: Edge-vector of exponential parameters (DOWN)
+ndarray: Edge-vector of exponential parameters (COTH)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="hailhydro.flux_overflow.Overflow.compute_flux_idx">
+<span class="sig-name descname"><span class="pre">compute_flux_idx</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/hailhydro/flux_overflow.html#Overflow.compute_flux_idx"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hailhydro.flux_overflow.Overflow.compute_flux_idx" title="Permalink to this definition">¶</a></dt>
+<dd><p>Identify regimes of Peclet numbers and the respective indices of edges.</p>
+<dl>
+<dt>Returns:</dt><dd><p>list:</p>
+<blockquote>
+<div><p>List of index sets, for handling limit cases for Peclet number
+regimes.</p>
+</div></blockquote>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="hailhydro.flux_overflow.Overflow.evaluate_jacobian">
+<span class="sig-name descname"><span class="pre">evaluate_jacobian</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">j</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">J_C</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">JB_eff</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">inv_B</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">c</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/hailhydro/flux_overflow.html#Overflow.evaluate_jacobian"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hailhydro.flux_overflow.Overflow.evaluate_jacobian" title="Permalink to this definition">¶</a></dt>
+<dd><p>Update the jth row of the current concentration Jacobian matrix.</p>
+<dl>
+<dt>Args:</dt><dd><p>j (int):</p>
+<blockquote>
+<div><p>Row index for concentration Jacobian matrix</p>
+</div></blockquote>
+<p>J_C (array):</p>
+<blockquote>
+<div><p>The current concentration Jacobian matrix.</p>
+</div></blockquote>
+<p>JB_eff (array):</p>
+<blockquote>
+<div><p>Intermediate absorption Jacobian matrix.</p>
+</div></blockquote>
+<p>inv_B (array):</p>
+<blockquote>
+<div><p>The inverse trasport matrix.</p>
+</div></blockquote>
+<p>c (array):</p>
+<blockquote>
+<div><p>The nodal concentration vector.</p>
+</div></blockquote>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="hailhydro.flux_overflow.Overflow.flux_sum_1">
+<span class="sig-name descname"><span class="pre">flux_sum_1</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">i</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">z</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">f2</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/hailhydro/flux_overflow.html#Overflow.flux_sum_1"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hailhydro.flux_overflow.Overflow.flux_sum_1" title="Permalink to this definition">¶</a></dt>
+<dd><p>Auxillary function for intermediate coefficient computation.</p>
+<dl>
+<dt>Args:</dt><dd><p>i (int):</p>
+<blockquote>
+<div><p>Index for incidence row of matrix.</p>
+</div></blockquote>
+<p>z (array):</p>
+<blockquote>
+<div><p>Edge-vector of Peclet numbers*0.5.</p>
+</div></blockquote>
+<p>f2 (array):</p>
+<blockquote>
+<div><p>Auxillary edge-vector.</p>
+</div></blockquote>
+</dd>
+<dt>Returns:</dt><dd><p>ndarray: Auxillary edge-vector for further numerics.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="hailhydro.flux_overflow.Overflow.flux_sum_2">
+<span class="sig-name descname"><span class="pre">flux_sum_2</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">i</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">z</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">A</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">f4</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/hailhydro/flux_overflow.html#Overflow.flux_sum_2"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hailhydro.flux_overflow.Overflow.flux_sum_2" title="Permalink to this definition">¶</a></dt>
+<dd><p>Auxillary function for intermediate coefficient computation.</p>
+<dl>
+<dt>Args:</dt><dd><p>i (int):</p>
+<blockquote>
+<div><p>Index for incidence row of matrix.</p>
+</div></blockquote>
+<p>z (array):</p>
+<blockquote>
+<div><p>Edge-vector of Peclet numbers*0.5.</p>
+</div></blockquote>
+<p>A (array):</p>
+<blockquote>
+<div><p>Edge-vector of cross-section values.</p>
+</div></blockquote>
+<p>f4 (array):</p>
+<blockquote>
+<div><p>Auxillary edge-vector.</p>
+</div></blockquote>
+</dd>
+<dt>Returns:</dt><dd><p>ndarray: Auxillary edge-vector for further numerics.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="hailhydro.flux_overflow.Overflow.get_alpha_omega_from_edges">
+<span class="sig-name descname"><span class="pre">get_alpha_omega_from_edges</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/hailhydro/flux_overflow.html#Overflow.get_alpha_omega_from_edges"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hailhydro.flux_overflow.Overflow.get_alpha_omega_from_edges" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the start(alpha) and end(omega) node of all network edges.</p>
+<dl class="simple">
+<dt>Returns:</dt><dd><p>ndarray: Edge-vector of start nodes.
+ndarray: Edge-vector of end nodes.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="hailhydro.flux_overflow.Overflow.get_concentrations_from_edges">
+<span class="sig-name descname"><span class="pre">get_concentrations_from_edges</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/hailhydro/flux_overflow.html#Overflow.get_concentrations_from_edges"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hailhydro.flux_overflow.Overflow.get_concentrations_from_edges" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the current start and end concentraiton values of each
+individual edge.</p>
+<dl class="simple">
+<dt>Returns:</dt><dd><p>ndarray: Edge-vector of start concentions.
+ndarray: Edge-vector of end concentions.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="hailhydro.flux_overflow.Overflow.solve_absorbing_boundary">
+<span class="sig-name descname"><span class="pre">solve_absorbing_boundary</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/hailhydro/flux_overflow.html#Overflow.solve_absorbing_boundary"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hailhydro.flux_overflow.Overflow.solve_absorbing_boundary" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute the concentration landscape for the absorbing boundary problem.</p>
+<dl class="simple">
+<dt>Returns:</dt><dd><p>ndarray: The reduced concentraiton vector
+ndarray: The reduced transport matrix</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="hailhydro.flux_overflow.Overflow.update_transport_matrix">
+<span class="sig-name descname"><span class="pre">update_transport_matrix</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">R</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/hailhydro/flux_overflow.html#Overflow.update_transport_matrix"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hailhydro.flux_overflow.Overflow.update_transport_matrix" title="Permalink to this definition">¶</a></dt>
+<dd><p>Update the effective transport matrix.</p>
+<dl>
+<dt>Args:</dt><dd><p>R (array):</p>
+<blockquote>
+<div><p>The current edge radii distribution.</p>
+</div></blockquote>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-hailhydro.flux_random_overflow">
+<span id="hailhydro-flux-random-overflow"></span><h2>hailhydro.flux_random_overflow<a class="headerlink" href="#module-hailhydro.flux_random_overflow" title="Permalink to this headline">¶</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="hailhydro.flux_random_overflow.FluxRandom">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">hailhydro.flux_random_overflow.</span></span><span class="sig-name descname"><span class="pre">FluxRandom</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">constr:</span> <span class="pre">networkx.classes.graph.Graph</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pars_source:</span> <span class="pre">dict</span> <span class="pre">=</span> <span class="pre">&lt;factory&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pars_plexus:</span> <span class="pre">dict</span> <span class="pre">=</span> <span class="pre">&lt;factory&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">flow_setting:</span> <span class="pre">dict</span> <span class="pre">=</span> <span class="pre">&lt;factory&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pars_solute:</span> <span class="pre">dict</span> <span class="pre">=</span> <span class="pre">&lt;factory&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pars_abs:</span> <span class="pre">dict</span> <span class="pre">=</span> <span class="pre">&lt;factory&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pars_geom:</span> <span class="pre">dict</span> <span class="pre">=</span> <span class="pre">&lt;factory&gt;</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/hailhydro/flux_random_overflow.html#FluxRandom"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hailhydro.flux_random_overflow.FluxRandom" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#hailhydro.flux_overflow.Overflow" title="hailhydro.flux_overflow.Overflow"><code class="xref py py-class docutils literal notranslate"><span class="pre">hailhydro.flux_overflow.Overflow</span></code></a>, <a class="reference internal" href="#hailhydro.flow_random.FlowReroute" title="hailhydro.flow_random.FlowReroute"><code class="xref py py-class docutils literal notranslate"><span class="pre">hailhydro.flow_random.FlowReroute</span></code></a></p>
+<p>The flux class defines variables and methods for computing Hagen-Poiseuille
+flows on kirchhoff networks. Furthermore it enables to compute simple,
+stationary advection-diffusion+absorption problems and concentration
+landscapes.</p>
+<p>To be used in conjunction with ‘kirchhoff’ and ‘goflow’ in order to
+simulate flow-driven network morphogenesis. This class contains manually
+implemented handling for large Peclet numbers.</p>
+<dl>
+<dt>Attributes:</dt><dd><p>constr (networkx.Graph):</p>
+<blockquote>
+<div><p>A networkx graph or circuit to initilize a flow on.</p>
+</div></blockquote>
+<p>pars_source (dict):</p>
+<blockquote>
+<div><p>The boundary conditions (Neumann) determining the in/outlfow of
+fluid accross the network.</p>
+</div></blockquote>
+<p>pars_plexus (dict):</p>
+<blockquote>
+<div><p>The initial plexus, edge values of  conductivity, the flow is to
+be calculated on.</p>
+</div></blockquote>
+<p>pars_solute (dict):</p>
+<blockquote>
+<div><p>The initial plexus, edge values of  conductivity, the flow is to
+be calculated on.</p>
+</div></blockquote>
+<p>pars_abs (dict):</p>
+<blockquote>
+<div><p>The initial plexus, edge values of  conductivity, the flow is to
+be calculated on.</p>
+</div></blockquote>
+<p>pars_geom (dict):</p>
+<blockquote>
+<div><p>The initial plexus, edge values of  conductivity, the flow is to
+be calculated on.</p>
+</div></blockquote>
+<p>dict_in (dict):</p>
+<blockquote>
+<div><p>The initial plexus, edge values of  conductivity, the flow is to
+be calculated on.</p>
+</div></blockquote>
+<p>dict_out (dict):</p>
+<blockquote>
+<div><p>The initial plexus, edge values of  conductivity, the flow is to
+be calculated on.</p>
+</div></blockquote>
+<p>dict_edges (dict):</p>
+<blockquote>
+<div><p>The initial plexus, edge values of  conductivity, the flow is to
+be calculated on.</p>
+</div></blockquote>
+<p>dict_node_out (dict):</p>
+<blockquote>
+<div><p>The initial plexus, edge values of  conductivity, the flow is to
+be calculated on.</p>
+</div></blockquote>
+<p>dict_node_in (dict):</p>
+<blockquote>
+<div><p>The initial plexus, edge values of  conductivity, the flow is to
+be calculated on.</p>
+</div></blockquote>
+</dd>
+<dt>Methods:</dt><dd><p>init_flow():</p>
+<blockquote>
+<div><p>Initialize flow variables, boundaries and handle constructor
+exceptions.</p>
+</div></blockquote>
+<p>set_boundaries():</p>
+<blockquote>
+<div><p>Explicitly set Neumann-boudaries and initial plexus as defined via
+‘pars_source/plexus’ parameters. Set internal output varaibles and
+incidence information.</p>
+</div></blockquote>
+<p>find_roots(G):</p>
+<blockquote>
+<div><p>Given a networkx graph, return all source-nodes (needs the nodal
+‘source’ attribute set).</p>
+</div></blockquote>
+<p>find_sinks(G):</p>
+<blockquote>
+<div><p>Given a networkx graph, return all sink-nodes (needs the nodal
+‘source’ attribute set).</p>
+</div></blockquote>
+<p>alpha_omega(G, j):</p>
+<blockquote>
+<div><p>Return the start (alpha) and end(omega) node of an edge, for any
+given networkx graph with edge labeling j.</p>
+</div></blockquote>
+<p>calc_pressure(conduct, source):</p>
+<blockquote>
+<div><p>Compute the pressure landscape, considering the current parameter
+and plexus condition.</p>
+</div></blockquote>
+<p>calc_flow_from_pressure(conduct, dP):</p>
+<blockquote>
+<div><p>Compute the flow landscape, considering the current parameter
+and plexus condition.</p>
+</div></blockquote>
+<p>calc_flow(conduct, source):</p>
+<blockquote>
+<div><p>Compute the flow landscape, considering the current parameter
+and plexus condition.</p>
+</div></blockquote>
+<p>calc_sq_flow(sconduct, source):</p>
+<blockquote>
+<div><p>Compute the squared pressure/flow landscape, considering the
+current parameter and plexus condition.</p>
+</div></blockquote>
+<p>calc_cross_section_from_conductivity(conductivity, conductance):</p>
+<blockquote>
+<div><p>Compute the squared radii values from the current conductivity
+matrix and conductance value.</p>
+</div></blockquote>
+<p>calc_conductivity_from_cross_section(R_sq, conductance):</p>
+<blockquote>
+<div><p>Compute the conductivity matrix from the current squared radii
+values and conductance value.</p>
+</div></blockquote>
+<p>calc_configuration_flow():</p>
+<blockquote>
+<div><p>Compute the pressure/flow landscape, considering the current
+parameter and plexus condition.</p>
+</div></blockquote>
+<p>init_flux():</p>
+<blockquote>
+<div><p>Initialize internal flux variables, boundaries and handle
+constructor exceptions.</p>
+</div></blockquote>
+<p>init_parameters():</p>
+<blockquote>
+<div><p>Initialize internal variables and containers.</p>
+</div></blockquote>
+<p>set_solute_boundaries():</p>
+<blockquote>
+<div><p>Set flux parameters and boundaries.</p>
+</div></blockquote>
+<p>calc_diff_flux(R_sq):</p>
+<blockquote>
+<div><p>Compute the reweighted cross-section given an advection-diffusion
+problem.</p>
+</div></blockquote>
+<p>calc_velocity_from_flowrate(Q, R_sq):</p>
+<blockquote>
+<div><p>Compute the effective flow velocities.</p>
+</div></blockquote>
+<p>calc_peclet(V):</p>
+<blockquote>
+<div><p>Compute the Peclet numbers.</p>
+</div></blockquote>
+<p>solve_absorbing_boundary():</p>
+<blockquote>
+<div><p>Compute the concentration landscape for the absorbing boundary
+problem.</p>
+</div></blockquote>
+<p>update_transport_matrix(R):</p>
+<blockquote>
+<div><p>Update the effective transport matrix.</p>
+</div></blockquote>
+<p>compute_flux_PeAbs():</p>
+<blockquote>
+<div><p>Compute the effective exponential factors for the stationary
+concentraiton problem.</p>
+</div></blockquote>
+<p>compute_flux_idx():</p>
+<blockquote>
+<div><p>Identify regimes of Peclet numbers and the respective indices of
+edges.</p>
+</div></blockquote>
+<p>compute_flux_exp(x, z, idx_pack):</p>
+<blockquote>
+<div><p>Computes auxillary exponential factors for transport matrix
+evaluation.</p>
+</div></blockquote>
+<p>calc_absorption():</p>
+<blockquote>
+<div><p>Computes total absorption lanscape of the advection-diffusion
+network.</p>
+</div></blockquote>
+<p>get_concentrations_from_edges():</p>
+<blockquote>
+<div><p>Returns the current start and end concentraiton values of each
+individual edge.</p>
+</div></blockquote>
+<p>calc_absorption_jacobian():</p>
+<blockquote>
+<div><p>Compute total edge’s absorption Jacobian matrix (with regard to
+radial changes).</p>
+</div></blockquote>
+<p>get_alpha_omega_from_edges():</p>
+<blockquote>
+<div><p>Returns the start(alpha) and end(omega) node of all network edges.</p>
+</div></blockquote>
+<p>calc_absorption_jacobian_coefficients_1(<a href="#id5"><span class="problematic" id="id6">*</span></a>args):</p>
+<blockquote>
+<div><p>Caluclation of intermediate transport matrix and Jacobain
+components.</p>
+</div></blockquote>
+<p>calc_abs_jac_coeff_11(x, pars):</p>
+<blockquote>
+<div><p>Auxillarycilary function for sequenced ndarray multiplication.</p>
+</div></blockquote>
+<p>calc_absorption_jacobian_coefficients_2(<a href="#id7"><span class="problematic" id="id8">*</span></a>args):</p>
+<blockquote>
+<div><p>Caluclation of intermediate transport matrix and Jacobain
+omponents.</p>
+</div></blockquote>
+<p>calc_flux_jacobian():</p>
+<blockquote>
+<div><p>Compute the flow components of the absorption Jacobian matrix.</p>
+</div></blockquote>
+<p>calc_cross_section_jacobian():</p>
+<blockquote>
+<div><p>Compute the radial Jacobian component of the absorption Jacobian
+matrix.</p>
+</div></blockquote>
+<p>calc_concentration_jacobian(J_PE, c):</p>
+<blockquote>
+<div><p>Compute the concentration Jacobian component of the absorption
+Jacobian matrix.</p>
+</div></blockquote>
+<p>calc_concentration_jacobian_coefficients(c):</p>
+<blockquote>
+<div><p>Auxillary function to compute intermediate coefficients for
+concentration Jacobian matrix evaluation.</p>
+</div></blockquote>
+<p>flux_sum_1(i, z, f2):</p>
+<blockquote>
+<div><p>Auxillary function for intermediate coefficient computation.</p>
+</div></blockquote>
+<p>flux_sum_2(i, z, A, f4):</p>
+<blockquote>
+<div><p>Auxillary function for intermediate coefficient computation.</p>
+</div></blockquote>
+<p>calc_inv_B(c):</p>
+<blockquote>
+<div><p>Return the reduced concentration vector and inverted transport
+matrix.</p>
+</div></blockquote>
+<p>calc_inc_jac_diag(flux_sum_1, flux_sum_2, pars):</p>
+<blockquote>
+<div><p>Auxillary function to compute intermediate Jacobian components for
+absoprtion Jacobian matrix.</p>
+</div></blockquote>
+<p>calc_incidence_jacobian_dev(JB_eff, dict_coeff, pars):</p>
+<blockquote>
+<div><p>Auxillary function to merge intermediate Jacobian components into
+effective absoprtion Jacobian matrix.</p>
+</div></blockquote>
+<p>evaluate_jacobian(j, J_C, JB_eff, inv_B, c):</p>
+<blockquote>
+<div><p>Update the jth row of the current concentration Jacobian matrix.</p>
+</div></blockquote>
+<p>calc_flow(<a href="#id9"><span class="problematic" id="id10">*</span></a>args):</p>
+<blockquote>
+<div><p>Compute the flow landscape, considering the current parameter
+and plexus condition.</p>
+</div></blockquote>
+<p>calc_transport_observables(idx, conduct, flow_obs):</p>
+<blockquote>
+<div><p>Compute the average wall-shear stress and absorption rates.</p>
+</div></blockquote>
+<p>calc_noisy_absorption(R_sq, flow_observables):</p>
+<blockquote>
+<div><p>Compute the absorption rate for the current flow landscpae
+realizsation.</p>
+</div></blockquote>
+<p>update_transport_matrix(R_sq, flow_obs):</p>
+<blockquote>
+<div><p>Update the tranport matrix for broken edge realizsations.</p>
+</div></blockquote>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="hailhydro.flux_random_overflow.FluxRandom.calc_flow">
+<span class="sig-name descname"><span class="pre">calc_flow</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/hailhydro/flux_random_overflow.html#FluxRandom.calc_flow"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hailhydro.flux_random_overflow.FluxRandom.calc_flow" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute the flow landscape, considering the current parameter
+and plexus condition.</p>
+<dl>
+<dt>Args:</dt><dd><p>args (iterable):</p>
+<blockquote>
+<div><p>Diverse set of model parameterst for
+‘get_broken_links_asarray()’’</p>
+</div></blockquote>
+</dd>
+<dt>Returns:</dt><dd><p>list: A list of edge/nodal-vectors of effective flow/pressure
+landscape realizations.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="hailhydro.flux_random_overflow.FluxRandom.calc_noisy_absorption">
+<span class="sig-name descname"><span class="pre">calc_noisy_absorption</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">R_sq</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">flow_observables</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/hailhydro/flux_random_overflow.html#FluxRandom.calc_noisy_absorption"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hailhydro.flux_random_overflow.FluxRandom.calc_noisy_absorption" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute the absorption rate for the current flow landscpae
+realizsation.</p>
+<dl>
+<dt>Args:</dt><dd><p>R_sq (array):</p>
+<blockquote>
+<div><p>Edge-vector of squared edge radii.</p>
+</div></blockquote>
+<p>flow_observables (array):</p>
+<blockquote>
+<div><p>A list of edge/nodal-vectors of effective flow/pressure
+landscape realizations.</p>
+</div></blockquote>
+</dd>
+<dt>Returns:</dt><dd><p>ndarray: Edge-vector of absorption rate values.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="hailhydro.flux_random_overflow.FluxRandom.calc_transport_observables">
+<span class="sig-name descname"><span class="pre">calc_transport_observables</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">idx</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">conduct</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">flow_obs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/hailhydro/flux_random_overflow.html#FluxRandom.calc_transport_observables"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hailhydro.flux_random_overflow.FluxRandom.calc_transport_observables" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute the average wall-shear stress and absorption rates.</p>
+<dl>
+<dt>Args:</dt><dd><p>idx (list):</p>
+<blockquote>
+<div><p>The list of failed edge sets.</p>
+</div></blockquote>
+<p>conduct (array):</p>
+<blockquote>
+<div><p>The network’s conductivity matrix.</p>
+</div></blockquote>
+<p>flow_obs (list):</p>
+<blockquote>
+<div><p>A list of edge/nodal-vectors of effective flow/pressure
+landscape realizations.</p>
+</div></blockquote>
+</dd>
+<dt>Returns:</dt><dd><p>ndarray: Edge-vector of average squared wall-shear stress.
+ndarray: Edge-vector of average edge absorption rate.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="hailhydro.flux_random_overflow.FluxRandom.update_transport_matrix">
+<span class="sig-name descname"><span class="pre">update_transport_matrix</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">R_sq</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">flow_obs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/hailhydro/flux_random_overflow.html#FluxRandom.update_transport_matrix"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hailhydro.flux_random_overflow.FluxRandom.update_transport_matrix" title="Permalink to this definition">¶</a></dt>
+<dd><p>Update the tranport matrix for broken edge realizsations.</p>
+<dl>
+<dt>Args:</dt><dd><p>R_sq (array):</p>
+<blockquote>
+<div><p>Edge-vector of squared edge radii.</p>
+</div></blockquote>
+<p>flow_obs (array):</p>
+<blockquote>
+<div><p>A list of edge/nodal-vectors of effective flow/pressure
+landscape realizations.</p>
+</div></blockquote>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+</section>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <div>
+    <h3><a href="index.html">Table of Contents</a></h3>
+    <ul>
+<li><a class="reference internal" href="#">hailhydro modules</a><ul>
+<li><a class="reference internal" href="#module-hailhydro.flow_init">hailhydro.flow_init</a></li>
+<li><a class="reference internal" href="#module-hailhydro.flow_random">hailhydro.flow_random</a></li>
+<li><a class="reference internal" href="#module-hailhydro.flux_init">hailhydro.flux_init</a></li>
+<li><a class="reference internal" href="#module-hailhydro.flux_overflow">hailhydro.flux_overflow</a></li>
+<li><a class="reference internal" href="#module-hailhydro.flux_random_overflow">hailhydro.flux_random_overflow</a></li>
+</ul>
+</li>
+</ul>
+
+  </div>
+  <div>
+    <h4>Previous topic</h4>
+    <p class="topless"><a href="intro.html"
+                          title="previous chapter">Installation</a></p>
+  </div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/hailhydro.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="intro.html" title="Installation"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">kirchhoff-hydro  documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">hailhydro modules</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2022, Felix Kramer.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 4.4.0.
+    </div>
+  </body>
+</html>

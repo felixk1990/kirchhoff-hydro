@@ -1,0 +1,426 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>hailhydro.flow_init &#8212; kirchhoff-hydro  documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/classic.css" />
+    
+    <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+    <script src="../../_static/jquery.js"></script>
+    <script src="../../_static/underscore.js"></script>
+    <script src="../../_static/doctools.js"></script>
+    
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">kirchhoff-hydro  documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../index.html" accesskey="U">Module code</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">hailhydro.flow_init</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for hailhydro.flow_init</h1><div class="highlight"><pre>
+<span></span><span class="c1"># @Author: Felix Kramer &lt;kramer&gt;</span>
+<span class="c1"># @Date:   08-03-2022</span>
+<span class="c1"># @Email:  felixuwekramer@proton.me</span>
+<span class="c1"># @Last modified by:   kramer</span>
+<span class="c1"># @Last modified time: 08-07-2022</span>
+
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">networkx</span> <span class="k">as</span> <span class="nn">nx</span>
+<span class="kn">from</span> <span class="nn">kirchhoff.circuit_init</span> <span class="kn">import</span> <span class="n">Circuit</span>
+<span class="kn">from</span> <span class="nn">kirchhoff.circuit_flow</span> <span class="kn">import</span> <span class="n">FlowCircuit</span>
+<span class="kn">from</span> <span class="nn">dataclasses</span> <span class="kn">import</span> <span class="n">dataclass</span><span class="p">,</span> <span class="n">field</span>
+
+
+<div class="viewcode-block" id="Flow"><a class="viewcode-back" href="../../hailhydro.html#hailhydro.flow_init.Flow">[docs]</a><span class="nd">@dataclass</span>
+<span class="k">class</span> <span class="nc">Flow</span><span class="p">():</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    The flow class defines variables and methods for computing Hagen-Poiseuille</span>
+<span class="sd">    flows on kirchhoff networks.</span>
+
+<span class="sd">    To be used in conjunction with &#39;kirchhoff&#39; and &#39;goflow&#39; in order to</span>
+<span class="sd">    simulate flow-driven network morphogenesis.</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        constr (networkx.Graph):\n</span>
+<span class="sd">            A networkx graph or circuit to initilize a flow on.</span>
+<span class="sd">        pars_source (dict):\n</span>
+<span class="sd">            The boundary conditions (Neumann) determining the in/outlfow of</span>
+<span class="sd">            fluid accross the network.</span>
+<span class="sd">        pars_plexus (dict):\n</span>
+<span class="sd">            The initial plexus, edge values of  conductivity, the flow is to</span>
+<span class="sd">            be calculated on.</span>
+
+<span class="sd">    Methods:</span>
+<span class="sd">        init_flow():\n</span>
+<span class="sd">            Initialize flow variables, boundaries and handle constructor</span>
+<span class="sd">            exceptions.</span>
+<span class="sd">        set_boundaries():\n</span>
+<span class="sd">            Explicitly set Neumann-boudaries and initial plexus as defined via</span>
+<span class="sd">            &#39;pars_source/plexus&#39; parameters. Set internal output varaibles and</span>
+<span class="sd">            incidence information.</span>
+<span class="sd">        find_roots(G):\n</span>
+<span class="sd">            Given a networkx graph, return all source-nodes (needs the nodal</span>
+<span class="sd">            &#39;source&#39; attribute set).</span>
+<span class="sd">        find_sinks(G):\n</span>
+<span class="sd">            Given a networkx graph, return all sink-nodes (needs the nodal</span>
+<span class="sd">            &#39;source&#39; attribute set).</span>
+<span class="sd">        alpha_omega(G, j):\n</span>
+<span class="sd">            Return the start (alpha) and end(omega) node of an edge, for any</span>
+<span class="sd">            given networkx graph with edge labeling j.</span>
+<span class="sd">        calc_pressure(conduct, source):\n</span>
+<span class="sd">            Compute the pressure landscape, considering the current parameter</span>
+<span class="sd">            and plexus condition.</span>
+<span class="sd">        calc_flow_from_pressure(conduct, dP):\n</span>
+<span class="sd">            Compute the flow landscape, considering the current parameter</span>
+<span class="sd">            and plexus condition.</span>
+<span class="sd">        calc_flow(conduct, source):\n</span>
+<span class="sd">            Compute the flow landscape, considering the current parameter</span>
+<span class="sd">            and plexus condition.</span>
+<span class="sd">        calc_sq_flow(sconduct, source):\n</span>
+<span class="sd">            Compute the squared pressure/flow landscape, considering the</span>
+<span class="sd">            current parameter and plexus condition.</span>
+<span class="sd">        calc_cross_section_from_conductivity(conductivity, conductance):\n</span>
+<span class="sd">            Compute the squared radii values from the current conductivity</span>
+<span class="sd">            matrix and conductance value.</span>
+<span class="sd">        calc_conductivity_from_cross_section(R_sq, conductance):\n</span>
+<span class="sd">            Compute the conductivity matrix from the current squared radii</span>
+<span class="sd">            values and conductance value.</span>
+<span class="sd">        calc_configuration_flow():\n</span>
+<span class="sd">            Compute the pressure/flow landscape, considering the current</span>
+<span class="sd">            parameter and plexus condition.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">constr</span><span class="p">:</span> <span class="n">nx</span><span class="o">.</span><span class="n">Graph</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="nb">repr</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">init</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">pars_source</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="nb">dict</span><span class="p">,</span> <span class="nb">repr</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="n">pars_plexus</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="nb">dict</span><span class="p">,</span> <span class="nb">repr</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__post_init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">init_flow</span><span class="p">()</span>
+
+<div class="viewcode-block" id="Flow.init_flow"><a class="viewcode-back" href="../../hailhydro.html#hailhydro.flow_init.Flow.init_flow">[docs]</a>    <span class="k">def</span> <span class="nf">init_flow</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Initialize flow variables, boundaries and handle constructor</span>
+<span class="sd">        exceptions.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            Exception:\n</span>
+<span class="sd">                Warning! Non-networkx type given for initialization, no</span>
+<span class="sd">                internal circuit established.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">info</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;unknown&#39;</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">constr</span><span class="p">,</span> <span class="n">nx</span><span class="o">.</span><span class="n">Graph</span><span class="p">):</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">circuit</span> <span class="o">=</span> <span class="n">FlowCircuit</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">constr</span><span class="p">)</span>
+
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">constr</span><span class="p">,</span> <span class="n">FlowCircuit</span><span class="p">):</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">circuit</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">constr</span>
+
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">constr</span><span class="p">,</span> <span class="n">Circuit</span><span class="p">):</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">circuit</span> <span class="o">=</span> <span class="n">FlowCircuit</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">constr</span><span class="o">.</span><span class="n">G</span><span class="p">)</span>
+
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span>
+                <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">                Warning! Non-networkx type given for initialization, no</span>
+<span class="sd">                internal circuit established.</span>
+<span class="sd">                &#39;&#39;&#39;</span>
+                <span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">set_boundaries</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="Flow.set_boundaries"><a class="viewcode-back" href="../../hailhydro.html#hailhydro.flow_init.Flow.set_boundaries">[docs]</a>    <span class="k">def</span> <span class="nf">set_boundaries</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Explicitly set Neumann-boudaries and initial plexus as defined via</span>
+<span class="sd">        &#39;pars_source/plexus&#39; parameters. Set internal output varaibles and</span>
+<span class="sd">        incidence information.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">par1</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">circuit</span><span class="o">.</span><span class="n">graph</span><span class="p">[</span><span class="s1">&#39;source_mode&#39;</span><span class="p">]</span>
+        <span class="n">par2</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">circuit</span><span class="o">.</span><span class="n">graph</span><span class="p">[</span><span class="s1">&#39;plexus_mode&#39;</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="n">par1</span> <span class="o">==</span> <span class="s1">&#39;&#39;</span> <span class="ow">or</span> <span class="n">par2</span> <span class="o">==</span> <span class="s1">&#39;&#39;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">circuit</span><span class="o">.</span><span class="n">set_source_landscape</span><span class="p">(</span><span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">pars_source</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">circuit</span><span class="o">.</span><span class="n">set_plexus_landscape</span><span class="p">(</span><span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">pars_plexus</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">info</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">circuit</span><span class="o">.</span><span class="n">info</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">B</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">BT</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">circuit</span><span class="o">.</span><span class="n">get_incidence_matrices</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="Flow.find_roots"><a class="viewcode-back" href="../../hailhydro.html#hailhydro.flow_init.Flow.find_roots">[docs]</a>    <span class="k">def</span> <span class="nf">find_roots</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">G</span><span class="p">):</span>
+
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Given a networkx graph, return all source-nodes (needs the nodal</span>
+<span class="sd">        &#39;source&#39; attribute set).</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            G (networkx.Graph):\n</span>
+<span class="sd">                A networkx graph.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            list:\n</span>
+<span class="sd">                A list of root/source nodes of the given graph.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">roots</span> <span class="o">=</span> <span class="p">[</span><span class="n">n</span> <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">G</span><span class="o">.</span><span class="n">nodes</span><span class="p">()</span> <span class="k">if</span> <span class="n">G</span><span class="o">.</span><span class="n">nodes</span><span class="p">[</span><span class="n">n</span><span class="p">][</span><span class="s1">&#39;source&#39;</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">]</span>
+
+        <span class="k">return</span> <span class="n">roots</span></div>
+
+<div class="viewcode-block" id="Flow.find_sinks"><a class="viewcode-back" href="../../hailhydro.html#hailhydro.flow_init.Flow.find_sinks">[docs]</a>    <span class="k">def</span> <span class="nf">find_sinks</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">G</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Given a networkx graph, return all sink-nodes (needs the nodal</span>
+<span class="sd">        &#39;source&#39; attribute set).</span>
+
+
+<span class="sd">        Args:</span>
+<span class="sd">            G (networkx.Graph):\n</span>
+<span class="sd">                A networkx graph.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            list:\n</span>
+<span class="sd">                A list of outlet/sink nodes of the given graph.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">list_n</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">circuit</span><span class="o">.</span><span class="n">list_graph_nodes</span>
+        <span class="n">sinks</span> <span class="o">=</span> <span class="p">[</span><span class="n">n</span> <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">list_n</span> <span class="k">if</span> <span class="n">G</span><span class="o">.</span><span class="n">nodes</span><span class="p">[</span><span class="n">n</span><span class="p">][</span><span class="s1">&#39;source&#39;</span><span class="p">]</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">]</span>
+
+        <span class="k">return</span> <span class="n">sinks</span></div>
+
+<div class="viewcode-block" id="Flow.alpha_omega"><a class="viewcode-back" href="../../hailhydro.html#hailhydro.flow_init.Flow.alpha_omega">[docs]</a>    <span class="k">def</span> <span class="nf">alpha_omega</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">G</span><span class="p">,</span> <span class="n">j</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return the start (alpha) and end(omega) node of an edge, for any given</span>
+<span class="sd">        networkx graph with edge labeling j.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            G (networkx.Graph):\n</span>
+<span class="sd">                A networkx graph.</span>
+<span class="sd">            j (int):\n</span>
+<span class="sd">                An existent edge label.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            node: The &#39;alpha&#39; node of edge (labeld j)</span>
+<span class="sd">            node: The &#39;omega&#39; node of edge (labeld j)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">labels</span> <span class="o">=</span> <span class="n">nx</span><span class="o">.</span><span class="n">get_edge_attributes</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="s1">&#39;label&#39;</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">e</span><span class="p">,</span> <span class="n">label</span> <span class="ow">in</span> <span class="n">labels</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">label</span> <span class="o">==</span> <span class="n">j</span><span class="p">:</span>
+                <span class="n">alpha</span> <span class="o">=</span> <span class="n">e</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+                <span class="n">omega</span> <span class="o">=</span> <span class="n">e</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+        <span class="k">return</span> <span class="n">alpha</span><span class="p">,</span> <span class="n">omega</span></div>
+
+<div class="viewcode-block" id="Flow.calc_pressure"><a class="viewcode-back" href="../../hailhydro.html#hailhydro.flow_init.Flow.calc_pressure">[docs]</a>    <span class="k">def</span> <span class="nf">calc_pressure</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">conduct</span><span class="p">,</span> <span class="n">source</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Compute the pressure landscape, considering the current parameter</span>
+<span class="sd">        and plexus condition.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            conduct (array):\n</span>
+<span class="sd">                The network&#39;s edge conductivity matrix.</span>
+<span class="sd">            source (array):\n</span>
+<span class="sd">                The nodal source vector.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            ndarray: Edge-vector of pressure-differences.</span>
+<span class="sd">            ndarray: Node-vector of pressures levels.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">OP</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">B</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">diag</span><span class="p">(</span><span class="n">conduct</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">BT</span><span class="p">))</span>
+        <span class="n">P</span><span class="p">,</span> <span class="n">RES</span><span class="p">,</span> <span class="n">RG</span><span class="p">,</span> <span class="n">si</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">lstsq</span><span class="p">(</span><span class="n">OP</span><span class="p">,</span> <span class="n">source</span><span class="p">,</span> <span class="n">rcond</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+        <span class="n">dP</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">BT</span><span class="p">,</span> <span class="n">P</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">dP</span><span class="p">,</span>  <span class="n">P</span></div>
+
+<div class="viewcode-block" id="Flow.calc_flow_from_pressure"><a class="viewcode-back" href="../../hailhydro.html#hailhydro.flow_init.Flow.calc_flow_from_pressure">[docs]</a>    <span class="k">def</span> <span class="nf">calc_flow_from_pressure</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">conduct</span><span class="p">,</span> <span class="n">dP</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Compute the flow landscape, considering the current parameter</span>
+<span class="sd">        and plexus condition.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            conduct (array):\n</span>
+<span class="sd">                The network&#39;s edge conductivity matrix.</span>
+<span class="sd">            dP (array):\n</span>
+<span class="sd">                Edge-vector of pressure-differences.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            ndarray: Edge-vector of directed flow rates.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">Q</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">diag</span><span class="p">(</span><span class="n">conduct</span><span class="p">),</span> <span class="n">dP</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">Q</span></div>
+
+<div class="viewcode-block" id="Flow.calc_flow"><a class="viewcode-back" href="../../hailhydro.html#hailhydro.flow_init.Flow.calc_flow">[docs]</a>    <span class="k">def</span> <span class="nf">calc_flow</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">conduct</span><span class="p">,</span> <span class="n">source</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Compute the flow landscape, considering the current parameter</span>
+<span class="sd">        and plexus condition.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            conduct (array):\n</span>
+<span class="sd">                The network&#39;s edge conductivity matrix.</span>
+<span class="sd">            source (array):\n</span>
+<span class="sd">                The nodal source vector.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            ndarray: Edge-vector of directed flow rates.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">dP</span><span class="p">,</span> <span class="n">P</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">calc_pressure</span><span class="p">(</span><span class="n">conduct</span><span class="p">,</span> <span class="n">source</span><span class="p">)</span>
+        <span class="n">Q</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">diag</span><span class="p">(</span><span class="n">conduct</span><span class="p">),</span> <span class="n">dP</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">Q</span></div>
+
+<div class="viewcode-block" id="Flow.calc_sq_flow"><a class="viewcode-back" href="../../hailhydro.html#hailhydro.flow_init.Flow.calc_sq_flow">[docs]</a>    <span class="k">def</span> <span class="nf">calc_sq_flow</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">conduct</span><span class="p">,</span> <span class="n">source</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Compute the squared pressure/flow landscape, considering the current</span>
+<span class="sd">        parameter and plexus condition.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            conduct (array):\n</span>
+<span class="sd">                The network&#39;s edge conductivity matrix.</span>
+<span class="sd">            source (array):\n</span>
+<span class="sd">                The nodal source vector.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            ndarray: Edge-vector of squared flow rate values.</span>
+<span class="sd">            ndarray: Edge-vector of squared pressure difference values.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">dP</span><span class="p">,</span> <span class="n">P</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">calc_pressure</span><span class="p">(</span><span class="n">conduct</span><span class="p">,</span> <span class="n">source</span><span class="p">)</span>
+        <span class="n">Q</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">calc_flow_from_pressure</span><span class="p">(</span><span class="n">conduct</span><span class="p">,</span> <span class="n">dP</span><span class="p">)</span>
+
+        <span class="n">p_sq</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">multiply</span><span class="p">(</span><span class="n">dP</span><span class="p">,</span> <span class="n">dP</span><span class="p">)</span>
+        <span class="n">q_sq</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">multiply</span><span class="p">(</span><span class="n">Q</span><span class="p">,</span> <span class="n">Q</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">p_sq</span><span class="p">,</span>  <span class="n">q_sq</span></div>
+
+<div class="viewcode-block" id="Flow.calc_cross_section_from_conductivity"><a class="viewcode-back" href="../../hailhydro.html#hailhydro.flow_init.Flow.calc_cross_section_from_conductivity">[docs]</a>    <span class="k">def</span> <span class="nf">calc_cross_section_from_conductivity</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">conductivity</span><span class="p">,</span> <span class="n">conductance</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Compute the squared radii values from the current conductivity matrix</span>
+<span class="sd">        and conductance value.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            conductivity (array):\n</span>
+<span class="sd">                The network&#39;s edge conductivity matrix.</span>
+<span class="sd">            conductance (array):\n</span>
+<span class="sd">                The graph&#39;s conductance unit.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            ndarray: Edge-vector of squared radii values.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">R_sq</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">conductivity</span><span class="o">/</span><span class="n">conductance</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">R_sq</span></div>
+
+<div class="viewcode-block" id="Flow.calc_conductivity_from_cross_section"><a class="viewcode-back" href="../../hailhydro.html#hailhydro.flow_init.Flow.calc_conductivity_from_cross_section">[docs]</a>    <span class="k">def</span> <span class="nf">calc_conductivity_from_cross_section</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">R_sq</span><span class="p">,</span> <span class="n">conductance</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Compute the conductivity matrix from the current squared radii values</span>
+<span class="sd">        and conductance value.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            R_sq (array):\n</span>
+<span class="sd">                Edge-vector of squared radii values.</span>
+<span class="sd">            conductance (array):\n</span>
+<span class="sd">                The graph&#39;s conductance unit.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            ndarray: The network&#39;s edge conductivity matrix.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">conductivity</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">power</span><span class="p">(</span><span class="n">R_sq</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span><span class="o">*</span><span class="n">conductance</span>
+
+        <span class="k">return</span> <span class="n">conductivity</span></div>
+
+<div class="viewcode-block" id="Flow.calc_configuration_flow"><a class="viewcode-back" href="../../hailhydro.html#hailhydro.flow_init.Flow.calc_configuration_flow">[docs]</a>    <span class="k">def</span> <span class="nf">calc_configuration_flow</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Compute the pressure/flow landscape, considering the current parameter</span>
+<span class="sd">        and plexus condition.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            ndarray: Edge-vector of directed flow rates.</span>
+<span class="sd">            ndarray: Edge-vector of pressure differences.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">k</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">circuit</span><span class="o">.</span><span class="n">edges</span><span class="p">[</span><span class="s1">&#39;conductivity&#39;</span><span class="p">]</span>
+        <span class="n">src</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">circuit</span><span class="o">.</span><span class="n">nodes</span><span class="p">[</span><span class="s1">&#39;source&#39;</span><span class="p">]</span>
+
+        <span class="n">dP</span><span class="p">,</span> <span class="n">P</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">calc_pressure</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">src</span><span class="p">)</span>
+        <span class="n">Q</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">diag</span><span class="p">(</span><span class="n">k</span><span class="p">),</span> <span class="n">dP</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">Q</span><span class="p">,</span> <span class="n">dP</span></div></div>
+</pre></div>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">kirchhoff-hydro  documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../index.html" >Module code</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">hailhydro.flow_init</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2022, Felix Kramer.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 4.4.0.
+    </div>
+  </body>
+</html>

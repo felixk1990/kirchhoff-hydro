@@ -1,0 +1,389 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>hailhydro.flux_random_overflow &#8212; kirchhoff-hydro  documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/classic.css" />
+    
+    <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+    <script src="../../_static/jquery.js"></script>
+    <script src="../../_static/underscore.js"></script>
+    <script src="../../_static/doctools.js"></script>
+    
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">kirchhoff-hydro  documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../index.html" accesskey="U">Module code</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">hailhydro.flux_random_overflow</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for hailhydro.flux_random_overflow</h1><div class="highlight"><pre>
+<span></span><span class="c1"># @Author: Felix Kramer &lt;kramer&gt;</span>
+<span class="c1"># @Date:   02-09-2021</span>
+<span class="c1"># @Email:  felixuwekramer@proton.me</span>
+<span class="c1"># @Last modified by:   kramer</span>
+<span class="c1"># @Last modified time: 08-07-2022</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">hailhydro.flow_random</span> <span class="kn">import</span> <span class="n">FlowReroute</span>
+<span class="kn">from</span> <span class="nn">hailhydro.flux_overflow</span> <span class="kn">import</span> <span class="n">Overflow</span>
+<span class="kn">from</span> <span class="nn">dataclasses</span> <span class="kn">import</span> <span class="n">dataclass</span>
+
+
+<div class="viewcode-block" id="FluxRandom"><a class="viewcode-back" href="../../hailhydro.html#hailhydro.flux_random_overflow.FluxRandom">[docs]</a><span class="nd">@dataclass</span>
+<span class="k">class</span> <span class="nc">FluxRandom</span><span class="p">(</span><span class="n">Overflow</span><span class="p">,</span> <span class="n">FlowReroute</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    The flux class defines variables and methods for computing Hagen-Poiseuille</span>
+<span class="sd">    flows on kirchhoff networks. Furthermore it enables to compute simple,</span>
+<span class="sd">    stationary advection-diffusion+absorption problems and concentration</span>
+<span class="sd">    landscapes.</span>
+
+<span class="sd">    To be used in conjunction with &#39;kirchhoff&#39; and &#39;goflow&#39; in order to</span>
+<span class="sd">    simulate flow-driven network morphogenesis. This class contains manually</span>
+<span class="sd">    implemented handling for large Peclet numbers.</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        constr (networkx.Graph):\n</span>
+<span class="sd">            A networkx graph or circuit to initilize a flow on.</span>
+<span class="sd">        pars_source (dict):\n</span>
+<span class="sd">            The boundary conditions (Neumann) determining the in/outlfow of</span>
+<span class="sd">            fluid accross the network.</span>
+<span class="sd">        pars_plexus (dict):\n</span>
+<span class="sd">            The initial plexus, edge values of  conductivity, the flow is to</span>
+<span class="sd">            be calculated on.</span>
+
+<span class="sd">        pars_solute (dict):\n</span>
+<span class="sd">            The initial plexus, edge values of  conductivity, the flow is to</span>
+<span class="sd">            be calculated on.</span>
+<span class="sd">        pars_abs (dict):\n</span>
+<span class="sd">            The initial plexus, edge values of  conductivity, the flow is to</span>
+<span class="sd">            be calculated on.</span>
+<span class="sd">        pars_geom (dict):\n</span>
+<span class="sd">            The initial plexus, edge values of  conductivity, the flow is to</span>
+<span class="sd">            be calculated on.</span>
+
+<span class="sd">        dict_in (dict):\n</span>
+<span class="sd">            The initial plexus, edge values of  conductivity, the flow is to</span>
+<span class="sd">            be calculated on.</span>
+<span class="sd">        dict_out (dict):\n</span>
+<span class="sd">            The initial plexus, edge values of  conductivity, the flow is to</span>
+<span class="sd">            be calculated on.</span>
+<span class="sd">        dict_edges (dict):\n</span>
+<span class="sd">            The initial plexus, edge values of  conductivity, the flow is to</span>
+<span class="sd">            be calculated on.</span>
+
+<span class="sd">        dict_node_out (dict):\n</span>
+<span class="sd">            The initial plexus, edge values of  conductivity, the flow is to</span>
+<span class="sd">            be calculated on.</span>
+<span class="sd">        dict_node_in (dict):\n</span>
+<span class="sd">            The initial plexus, edge values of  conductivity, the flow is to</span>
+<span class="sd">            be calculated on.</span>
+
+<span class="sd">    Methods:</span>
+<span class="sd">        init_flow():\n</span>
+<span class="sd">            Initialize flow variables, boundaries and handle constructor</span>
+<span class="sd">            exceptions.</span>
+<span class="sd">        set_boundaries():\n</span>
+<span class="sd">            Explicitly set Neumann-boudaries and initial plexus as defined via</span>
+<span class="sd">            &#39;pars_source/plexus&#39; parameters. Set internal output varaibles and</span>
+<span class="sd">            incidence information.</span>
+<span class="sd">        find_roots(G):\n</span>
+<span class="sd">            Given a networkx graph, return all source-nodes (needs the nodal</span>
+<span class="sd">            &#39;source&#39; attribute set).</span>
+<span class="sd">        find_sinks(G):\n</span>
+<span class="sd">            Given a networkx graph, return all sink-nodes (needs the nodal</span>
+<span class="sd">            &#39;source&#39; attribute set).</span>
+<span class="sd">        alpha_omega(G, j):\n</span>
+<span class="sd">            Return the start (alpha) and end(omega) node of an edge, for any</span>
+<span class="sd">            given networkx graph with edge labeling j.</span>
+<span class="sd">        calc_pressure(conduct, source):\n</span>
+<span class="sd">            Compute the pressure landscape, considering the current parameter</span>
+<span class="sd">            and plexus condition.</span>
+<span class="sd">        calc_flow_from_pressure(conduct, dP):\n</span>
+<span class="sd">            Compute the flow landscape, considering the current parameter</span>
+<span class="sd">            and plexus condition.</span>
+<span class="sd">        calc_flow(conduct, source):\n</span>
+<span class="sd">            Compute the flow landscape, considering the current parameter</span>
+<span class="sd">            and plexus condition.</span>
+<span class="sd">        calc_sq_flow(sconduct, source):\n</span>
+<span class="sd">            Compute the squared pressure/flow landscape, considering the</span>
+<span class="sd">            current parameter and plexus condition.</span>
+<span class="sd">        calc_cross_section_from_conductivity(conductivity, conductance):\n</span>
+<span class="sd">            Compute the squared radii values from the current conductivity</span>
+<span class="sd">            matrix and conductance value.</span>
+<span class="sd">        calc_conductivity_from_cross_section(R_sq, conductance):\n</span>
+<span class="sd">            Compute the conductivity matrix from the current squared radii</span>
+<span class="sd">            values and conductance value.</span>
+<span class="sd">        calc_configuration_flow():\n</span>
+<span class="sd">            Compute the pressure/flow landscape, considering the current</span>
+<span class="sd">            parameter and plexus condition.</span>
+<span class="sd">        init_flux():\n</span>
+<span class="sd">            Initialize internal flux variables, boundaries and handle</span>
+<span class="sd">            constructor exceptions.</span>
+<span class="sd">        init_parameters():\n</span>
+<span class="sd">            Initialize internal variables and containers.</span>
+<span class="sd">        set_solute_boundaries():\n</span>
+<span class="sd">            Set flux parameters and boundaries.</span>
+<span class="sd">        calc_diff_flux(R_sq):\n</span>
+<span class="sd">            Compute the reweighted cross-section given an advection-diffusion</span>
+<span class="sd">            problem.</span>
+<span class="sd">        calc_velocity_from_flowrate(Q, R_sq):\n</span>
+<span class="sd">            Compute the effective flow velocities.</span>
+<span class="sd">        calc_peclet(V):\n</span>
+<span class="sd">            Compute the Peclet numbers.</span>
+<span class="sd">        solve_absorbing_boundary():\n</span>
+<span class="sd">            Compute the concentration landscape for the absorbing boundary</span>
+<span class="sd">            problem.</span>
+<span class="sd">        update_transport_matrix(R):\n</span>
+<span class="sd">            Update the effective transport matrix.</span>
+<span class="sd">        compute_flux_PeAbs():\n</span>
+<span class="sd">            Compute the effective exponential factors for the stationary</span>
+<span class="sd">            concentraiton problem.</span>
+<span class="sd">        compute_flux_idx():\n</span>
+<span class="sd">            Identify regimes of Peclet numbers and the respective indices of</span>
+<span class="sd">            edges.</span>
+<span class="sd">        compute_flux_exp(x, z, idx_pack):\n</span>
+<span class="sd">            Computes auxillary exponential factors for transport matrix</span>
+<span class="sd">            evaluation.</span>
+<span class="sd">        calc_absorption():\n</span>
+<span class="sd">            Computes total absorption lanscape of the advection-diffusion</span>
+<span class="sd">            network.</span>
+<span class="sd">        get_concentrations_from_edges():\n</span>
+<span class="sd">            Returns the current start and end concentraiton values of each</span>
+<span class="sd">            individual edge.</span>
+<span class="sd">        calc_absorption_jacobian():\n</span>
+<span class="sd">            Compute total edge&#39;s absorption Jacobian matrix (with regard to</span>
+<span class="sd">            radial changes).</span>
+<span class="sd">        get_alpha_omega_from_edges():\n</span>
+<span class="sd">            Returns the start(alpha) and end(omega) node of all network edges.</span>
+<span class="sd">        calc_absorption_jacobian_coefficients_1(*args):\n</span>
+<span class="sd">            Caluclation of intermediate transport matrix and Jacobain</span>
+<span class="sd">            components.</span>
+<span class="sd">        calc_abs_jac_coeff_11(x, pars):\n</span>
+<span class="sd">            Auxillarycilary function for sequenced ndarray multiplication.</span>
+<span class="sd">        calc_absorption_jacobian_coefficients_2(*args):\n</span>
+<span class="sd">            Caluclation of intermediate transport matrix and Jacobain</span>
+<span class="sd">            omponents.</span>
+<span class="sd">        calc_flux_jacobian():\n</span>
+<span class="sd">            Compute the flow components of the absorption Jacobian matrix.</span>
+<span class="sd">        calc_cross_section_jacobian():\n</span>
+<span class="sd">            Compute the radial Jacobian component of the absorption Jacobian</span>
+<span class="sd">            matrix.</span>
+<span class="sd">        calc_concentration_jacobian(J_PE, c):\n</span>
+<span class="sd">            Compute the concentration Jacobian component of the absorption</span>
+<span class="sd">            Jacobian matrix.</span>
+<span class="sd">        calc_concentration_jacobian_coefficients(c):\n</span>
+<span class="sd">            Auxillary function to compute intermediate coefficients for</span>
+<span class="sd">            concentration Jacobian matrix evaluation.</span>
+<span class="sd">        flux_sum_1(i, z, f2):\n</span>
+<span class="sd">            Auxillary function for intermediate coefficient computation.</span>
+<span class="sd">        flux_sum_2(i, z, A, f4):\n</span>
+<span class="sd">            Auxillary function for intermediate coefficient computation.</span>
+<span class="sd">        calc_inv_B(c):\n</span>
+<span class="sd">            Return the reduced concentration vector and inverted transport</span>
+<span class="sd">            matrix.</span>
+<span class="sd">        calc_inc_jac_diag(flux_sum_1, flux_sum_2, pars):\n</span>
+<span class="sd">            Auxillary function to compute intermediate Jacobian components for</span>
+<span class="sd">            absoprtion Jacobian matrix.</span>
+<span class="sd">        calc_incidence_jacobian_dev(JB_eff, dict_coeff, pars):\n</span>
+<span class="sd">            Auxillary function to merge intermediate Jacobian components into</span>
+<span class="sd">            effective absoprtion Jacobian matrix.</span>
+<span class="sd">        evaluate_jacobian(j, J_C, JB_eff, inv_B, c):\n</span>
+<span class="sd">            Update the jth row of the current concentration Jacobian matrix.</span>
+<span class="sd">        calc_flow(*args):\n</span>
+<span class="sd">            Compute the flow landscape, considering the current parameter</span>
+<span class="sd">            and plexus condition.</span>
+<span class="sd">        calc_transport_observables(idx, conduct, flow_obs):\n</span>
+<span class="sd">            Compute the average wall-shear stress and absorption rates.</span>
+<span class="sd">        calc_noisy_absorption(R_sq, flow_observables):\n</span>
+<span class="sd">            Compute the absorption rate for the current flow landscpae</span>
+<span class="sd">            realizsation.</span>
+<span class="sd">        update_transport_matrix(R_sq, flow_obs):\n</span>
+<span class="sd">            Update the tranport matrix for broken edge realizsations.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__post_init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">circuit</span><span class="p">):</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">init_flux</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">crit_pe</span> <span class="o">=</span> <span class="mf">50.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">init_random</span><span class="p">()</span>
+
+<div class="viewcode-block" id="FluxRandom.calc_flow"><a class="viewcode-back" href="../../hailhydro.html#hailhydro.flux_random_overflow.FluxRandom.calc_flow">[docs]</a>    <span class="k">def</span> <span class="nf">calc_flow</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Compute the flow landscape, considering the current parameter</span>
+<span class="sd">        and plexus condition.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            args (iterable):\n</span>
+<span class="sd">                Diverse set of model parameterst for</span>
+<span class="sd">                &#39;get_broken_links_asarray()&#39;&#39;</span>
+<span class="sd">        Returns:</span>
+<span class="sd">            list: A list of edge/nodal-vectors of effective flow/pressure</span>
+<span class="sd">            landscape realizations.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">graph_matrices</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_broken_links_asarray</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">)</span>
+        <span class="n">flow_observables</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">calc_flows_mapping</span><span class="p">,</span> <span class="n">graph_matrices</span><span class="p">))</span>
+
+        <span class="k">return</span> <span class="n">flow_observables</span></div>
+
+<div class="viewcode-block" id="FluxRandom.calc_transport_observables"><a class="viewcode-back" href="../../hailhydro.html#hailhydro.flux_random_overflow.FluxRandom.calc_transport_observables">[docs]</a>    <span class="k">def</span> <span class="nf">calc_transport_observables</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">idx</span><span class="p">,</span> <span class="n">conduct</span><span class="p">,</span> <span class="n">flow_obs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Compute the average wall-shear stress and absorption rates.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            idx (list):\n</span>
+<span class="sd">                The list of failed edge sets.</span>
+<span class="sd">            conduct (array):\n</span>
+<span class="sd">                The network&#39;s conductivity matrix.</span>
+<span class="sd">            flow_obs (list):\n</span>
+<span class="sd">                A list of edge/nodal-vectors of effective flow/pressure</span>
+<span class="sd">                landscape realizations.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            ndarray: Edge-vector of average squared wall-shear stress.</span>
+<span class="sd">            ndarray: Edge-vector of average edge absorption rate.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># calc ensemble averages</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">get_broken_links_asarray</span><span class="p">(</span><span class="n">idx</span><span class="p">,</span> <span class="n">conduct</span><span class="p">)</span>
+        <span class="n">R_powers</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">calc_random_radii</span><span class="p">(</span><span class="n">idx</span><span class="p">,</span> <span class="n">conduct</span><span class="p">)</span>
+        <span class="n">dV_sq</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">power</span><span class="p">([</span><span class="n">fo</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="k">for</span> <span class="n">fo</span> <span class="ow">in</span> <span class="n">flow_obs</span><span class="p">],</span> <span class="mi">2</span><span class="p">)</span>
+
+        <span class="n">R_sq</span> <span class="o">=</span> <span class="n">R_powers</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">PHI</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">calc_noisy_absorption</span><span class="p">,</span> <span class="n">R_sq</span><span class="p">,</span> <span class="n">flow_obs</span><span class="p">))</span>
+        <span class="n">SHEAR</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">multiply</span><span class="p">(</span><span class="n">dV_sq</span><span class="p">,</span> <span class="n">R_sq</span><span class="p">)</span>
+
+        <span class="n">avg_shear_sq</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">SHEAR</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+        <span class="n">avg_PHI</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">PHI</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">avg_shear_sq</span><span class="p">,</span> <span class="n">avg_PHI</span></div>
+
+<div class="viewcode-block" id="FluxRandom.calc_noisy_absorption"><a class="viewcode-back" href="../../hailhydro.html#hailhydro.flux_random_overflow.FluxRandom.calc_noisy_absorption">[docs]</a>    <span class="k">def</span> <span class="nf">calc_noisy_absorption</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">R_sq</span><span class="p">,</span> <span class="n">flow_observables</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Compute the absorption rate for the current flow landscpae</span>
+<span class="sd">        realizsation.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            R_sq (array):\n</span>
+<span class="sd">                Edge-vector of squared edge radii.</span>
+<span class="sd">            flow_observables (array):\n</span>
+<span class="sd">                A list of edge/nodal-vectors of effective flow/pressure</span>
+<span class="sd">                landscape realizations.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            ndarray: Edge-vector of absorption rate values.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">update_transport_matrix</span><span class="p">(</span><span class="n">R_sq</span><span class="p">,</span> <span class="n">flow_observables</span><span class="p">)</span>
+
+        <span class="n">c</span><span class="p">,</span> <span class="n">B_new</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">solve_absorbing_boundary</span><span class="p">()</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">calc_absorption</span><span class="p">(</span><span class="n">R_sq</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="FluxRandom.update_transport_matrix"><a class="viewcode-back" href="../../hailhydro.html#hailhydro.flux_random_overflow.FluxRandom.update_transport_matrix">[docs]</a>    <span class="k">def</span> <span class="nf">update_transport_matrix</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">R_sq</span><span class="p">,</span> <span class="n">flow_obs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Update the tranport matrix for broken edge realizsations.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            R_sq (array):\n</span>
+<span class="sd">                Edge-vector of squared edge radii.</span>
+<span class="sd">            flow_obs (array):\n</span>
+<span class="sd">                A list of edge/nodal-vectors of effective flow/pressure</span>
+<span class="sd">                landscape realizations.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># set peclet number and internal flow state</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">circuit</span><span class="o">.</span><span class="n">edge</span><span class="p">[</span><span class="s1">&#39;flow_rate&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">flow_obs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">ref_var</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">circuit</span><span class="o">.</span><span class="n">scale</span><span class="p">[</span><span class="s1">&#39;length&#39;</span><span class="p">]</span><span class="o">/</span><span class="bp">self</span><span class="o">.</span><span class="n">circuit</span><span class="o">.</span><span class="n">scale</span><span class="p">[</span><span class="s1">&#39;diffusion&#39;</span><span class="p">]</span>
+
+        <span class="n">flow_rate</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">circuit</span><span class="o">.</span><span class="n">edge</span><span class="p">[</span><span class="s1">&#39;flow_rate&#39;</span><span class="p">]</span>
+        <span class="n">V</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">calc_velocity_from_flowrate</span><span class="p">(</span><span class="n">flow_rate</span><span class="p">,</span> <span class="n">R_sq</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">circuit</span><span class="o">.</span><span class="n">edge</span><span class="p">[</span><span class="s1">&#39;peclet&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">calc_peclet</span><span class="p">(</span><span class="n">V</span><span class="p">,</span> <span class="n">ref_var</span><span class="p">)</span>
+        <span class="n">A</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">calc_diff_flux</span><span class="p">(</span><span class="n">R_sq</span><span class="p">,</span> <span class="mf">1.</span><span class="o">/</span><span class="n">ref_var</span><span class="p">)</span>
+
+        <span class="n">x</span><span class="p">,</span> <span class="n">z</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">compute_flux_PeAbs</span><span class="p">()</span>
+        <span class="n">idx_pack</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">compute_flux_idx</span><span class="p">()</span>
+        <span class="n">args</span> <span class="o">=</span> <span class="p">[</span><span class="n">x</span><span class="p">,</span> <span class="n">z</span><span class="p">,</span> <span class="n">idx_pack</span><span class="p">]</span>
+        <span class="n">e_up_sinh_x</span><span class="p">,</span> <span class="n">e_down_sinh_x</span><span class="p">,</span> <span class="n">coth_x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">compute_flux_exp</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">)</span>
+
+        <span class="n">f1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">multiply</span><span class="p">(</span><span class="n">z</span><span class="p">,</span> <span class="n">A</span><span class="p">)</span>
+        <span class="n">f2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">multiply</span><span class="p">(</span><span class="n">A</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">multiply</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">coth_x</span><span class="p">))</span><span class="o">*</span><span class="mf">0.5</span>
+
+        <span class="n">f3</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">multiply</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">multiply</span><span class="p">(</span><span class="n">A</span><span class="p">,</span> <span class="n">x</span><span class="p">),</span> <span class="n">e_up_sinh_x</span><span class="p">)</span><span class="o">*</span><span class="mf">0.5</span>
+        <span class="n">f4</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">multiply</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">multiply</span><span class="p">(</span><span class="n">A</span><span class="p">,</span> <span class="n">x</span><span class="p">),</span> <span class="n">e_down_sinh_x</span><span class="p">)</span><span class="o">*</span><span class="mf">0.5</span>
+
+        <span class="c1"># set up concentration_matrix</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">B_eff</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">N</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">N</span><span class="p">))</span>
+
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">n</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">circuit</span><span class="o">.</span><span class="n">list_graph_nodes</span><span class="p">):</span>
+
+            <span class="n">b1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">multiply</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">B</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="p">:],</span> <span class="n">f1</span><span class="p">)</span>
+            <span class="n">b2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">multiply</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">absolute</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">B</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="p">:]),</span> <span class="n">f2</span><span class="p">)</span>
+            <span class="n">b12</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">b1</span><span class="p">,</span> <span class="n">b2</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">B_eff</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">b12</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">B_eff</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">dict_in</span><span class="p">[</span><span class="n">n</span><span class="p">]]</span> <span class="o">=</span> <span class="o">-</span><span class="n">f3</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">dict_node_in</span><span class="p">[</span><span class="n">n</span><span class="p">]]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">B_eff</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">dict_out</span><span class="p">[</span><span class="n">n</span><span class="p">]]</span> <span class="o">=</span> <span class="o">-</span><span class="n">f4</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">dict_node_out</span><span class="p">[</span><span class="n">n</span><span class="p">]]</span></div></div>
+</pre></div>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">kirchhoff-hydro  documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../index.html" >Module code</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">hailhydro.flux_random_overflow</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2022, Felix Kramer.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 4.4.0.
+    </div>
+  </body>
+</html>

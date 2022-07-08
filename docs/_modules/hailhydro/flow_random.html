@@ -1,0 +1,709 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>hailhydro.flow_random &#8212; kirchhoff-hydro  documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/classic.css" />
+    
+    <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+    <script src="../../_static/jquery.js"></script>
+    <script src="../../_static/underscore.js"></script>
+    <script src="../../_static/doctools.js"></script>
+    
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">kirchhoff-hydro  documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../index.html" accesskey="U">Module code</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">hailhydro.flow_random</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for hailhydro.flow_random</h1><div class="highlight"><pre>
+<span></span><span class="c1"># @Author: Felix Kramer &lt;kramer&gt;</span>
+<span class="c1"># @Date:   08-03-2022</span>
+<span class="c1"># @Email:  felixuwekramer@proton.me</span>
+<span class="c1"># @Last modified by:   kramer</span>
+<span class="c1"># @Last modified time: 08-07-2022</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">scipy.linalg</span> <span class="k">as</span> <span class="nn">lina</span>
+<span class="kn">import</span> <span class="nn">random</span> <span class="k">as</span> <span class="nn">rd</span>
+<span class="kn">import</span> <span class="nn">networkx</span> <span class="k">as</span> <span class="nn">nx</span>
+<span class="kn">from</span> <span class="nn">hailhydro.flow_init</span> <span class="kn">import</span> <span class="n">Flow</span>
+<span class="kn">from</span> <span class="nn">dataclasses</span> <span class="kn">import</span> <span class="n">dataclass</span><span class="p">,</span> <span class="n">field</span>
+<span class="n">rand</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;mode&#39;</span><span class="p">:</span> <span class="s1">&#39;default&#39;</span><span class="p">,</span> <span class="s1">&#39;noise&#39;</span><span class="p">:</span> <span class="mf">0.</span><span class="p">}</span>
+<span class="n">reroute</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;p_broken&#39;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="s1">&#39;num_iter&#39;</span><span class="p">:</span> <span class="mi">100</span><span class="p">}</span>
+
+
+<div class="viewcode-block" id="FlowRandom"><a class="viewcode-back" href="../../hailhydro.html#hailhydro.flow_random.FlowRandom">[docs]</a><span class="nd">@dataclass</span>
+<span class="k">class</span> <span class="nc">FlowRandom</span><span class="p">(</span><span class="n">Flow</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    The random flow class defines variables and methods for computing</span>
+<span class="sd">    randomized-averaged Hagen-Poiseuille flows on kirchhoff networks.</span>
+
+<span class="sd">    To be used in conjunction with &#39;kirchhoff&#39; and &#39;goflow&#39; in order to</span>
+<span class="sd">    simulate flow-driven network morphogenesis. The implementation is based on</span>
+<span class="sd">    the models of Corson (PRL, 2010) and Hu-Cai(PRL, 2013), which consider</span>
+<span class="sd">    random flow patterns to emerge from a variation in sink strengths.</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        constr (networkx.Graph):\n</span>
+<span class="sd">            A networkx graph or circuit to initilize a flow on.</span>
+<span class="sd">        pars_source (dict):\n</span>
+<span class="sd">            The boundary conditions (Neumann) determining the in/outlfow of</span>
+<span class="sd">            fluid accross the network.</span>
+<span class="sd">        pars_plexus (dict):\n</span>
+<span class="sd">            The initial plexus, edge values of  conductivity, the flow is to</span>
+<span class="sd">            be calculated on.</span>
+<span class="sd">        flow_setting (dict):\n</span>
+<span class="sd">            The setting for randomized flow, i.e. noise levels and</span>
+<span class="sd">            correlations.</span>
+
+<span class="sd">    Methods:</span>
+<span class="sd">        init_flow():\n</span>
+<span class="sd">            Initialize flow variables, boundaries and handle constructor</span>
+<span class="sd">            exceptions.</span>
+<span class="sd">        set_boundaries():\n</span>
+<span class="sd">            Explicitly set Neumann-boudaries and initial plexus as defined via</span>
+<span class="sd">            &#39;pars_source/plexus&#39; parameters. Set internal output varaibles and</span>
+<span class="sd">            incidence information.</span>
+<span class="sd">        find_roots(G):\n</span>
+<span class="sd">            Given a networkx graph, return all source-nodes (needs the nodal</span>
+<span class="sd">            &#39;source&#39; attribute set).</span>
+<span class="sd">        find_sinks(G):\n</span>
+<span class="sd">            Given a networkx graph, return all sink-nodes (needs the nodal</span>
+<span class="sd">            &#39;source&#39; attribute set).</span>
+<span class="sd">        alpha_omega(G, j):\n</span>
+<span class="sd">            Return the start (alpha) and end(omega) node of an edge, for any</span>
+<span class="sd">            given networkx graph with edge labeling j.</span>
+<span class="sd">        calc_pressure(conduct, source):\n</span>
+<span class="sd">            Compute the pressure landscape, considering the current parameter</span>
+<span class="sd">            and plexus condition.</span>
+<span class="sd">        calc_flow_from_pressure(conduct, dP):\n</span>
+<span class="sd">            Compute the flow landscape, considering the current parameter</span>
+<span class="sd">            and plexus condition.</span>
+<span class="sd">        calc_flow(conduct, source):\n</span>
+<span class="sd">            Compute the flow landscape, considering the current parameter</span>
+<span class="sd">            and plexus condition.</span>
+<span class="sd">        calc_sq_flow(sconduct, source):\n</span>
+<span class="sd">            Compute the squared pressure/flow landscape, considering the</span>
+<span class="sd">            current parameter and plexus condition.</span>
+<span class="sd">        calc_cross_section_from_conductivity(conductivity, conductance):\n</span>
+<span class="sd">            Compute the squared radii values from the current conductivity</span>
+<span class="sd">            matrix and conductance value.</span>
+<span class="sd">        calc_conductivity_from_cross_section(R_sq, conductance):\n</span>
+<span class="sd">            Compute the conductivity matrix from the current squared radii</span>
+<span class="sd">            values and conductance value.</span>
+<span class="sd">        calc_configuration_flow():\n</span>
+<span class="sd">            Compute the pressure/flow landscape, considering the current</span>
+<span class="sd">            parameter and plexus condition.</span>
+<span class="sd">        init_random():\n</span>
+<span class="sd">            Initialize random-flow variables and boundaries.</span>
+<span class="sd">        set_root_source_matrix(mean, variance):\n</span>
+<span class="sd">            Set the (positive) parameters of deterministic and noisy flow</span>
+<span class="sd">            levels.</span>
+<span class="sd">         set_effective_source_matrix(noise):\n</span>
+<span class="sd">            Set the effective fluctuation matrix with ggiven noise level.</span>
+<span class="sd">        calc_sq_flow_effective(conduct):\n</span>
+<span class="sd">            Compute the squared pressure/flow landscape, considering the</span>
+<span class="sd">            current parameter and plexus condition (given the internal</span>
+<span class="sd">            effective noise matrix was initialized).</span>
+
+<span class="sd">        calc_sq_flow_root(conduct):\n</span>
+<span class="sd">            Compute the squared pressure/flow landscape, considering the</span>
+<span class="sd">            current parameter and plexus condition (given the internal sink</span>
+<span class="sd">            mean and variance were initialized).</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">default</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="nb">repr</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">init</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">flow_setting</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="nb">dict</span><span class="p">(),</span> <span class="o">**</span><span class="n">default</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__post_init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">init_flow</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">init_random</span><span class="p">()</span>
+
+<div class="viewcode-block" id="FlowRandom.init_random"><a class="viewcode-back" href="../../hailhydro.html#hailhydro.flow_random.FlowRandom.init_random">[docs]</a>    <span class="k">def</span> <span class="nf">init_random</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Initialize random-flow variables and boundaries.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            Exception:\n</span>
+<span class="sd">                Warning flow landscape not set!</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">flow_setting</span><span class="p">[</span><span class="s1">&#39;mode&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;default&#39;</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">set_effective_source_matrix</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">flow_setting</span><span class="p">[</span><span class="s1">&#39;noise&#39;</span><span class="p">])</span>
+
+            <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">flow_setting</span><span class="p">[</span><span class="s1">&#39;mode&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;root&#39;</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">mu_sq</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">flow_setting</span><span class="p">[</span><span class="s1">&#39;mu_sq&#39;</span><span class="p">]</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">var</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">flow_setting</span><span class="p">[</span><span class="s1">&#39;var&#39;</span><span class="p">]</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">set_multi_source_matrix</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mu_sq</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">var</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span>
+                <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">                Warning flow landscape not set!</span>
+<span class="sd">                &#39;&#39;&#39;</span>
+                <span class="p">)</span></div>
+
+    <span class="c1"># setup_random_fluctuations</span>
+<div class="viewcode-block" id="FlowRandom.set_root_source_matrix"><a class="viewcode-back" href="../../hailhydro.html#hailhydro.flow_random.FlowRandom.set_root_source_matrix">[docs]</a>    <span class="k">def</span> <span class="nf">set_root_source_matrix</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mean</span><span class="p">,</span> <span class="n">variance</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Set the (positive) parameters of deterministic and noisy flow levels.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            mean (float):\n</span>
+<span class="sd">                The squared mean value of sink strength.</span>
+<span class="sd">            variance (float):\n</span>
+<span class="sd">                The variance value of sink strength.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">N</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">circuit</span><span class="o">.</span><span class="n">list_graph_nodes</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">matrix_mu</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">identity</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">N</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">N</span><span class="p">):</span>
+                <span class="n">h</span> <span class="o">=</span> <span class="mf">0.</span>
+                <span class="k">if</span> <span class="n">n</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">m</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="n">h</span> <span class="o">+=</span> <span class="p">(</span><span class="n">N</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+                <span class="k">elif</span> <span class="n">n</span> <span class="o">==</span> <span class="n">m</span> <span class="ow">and</span> <span class="n">n</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="n">h</span> <span class="o">+=</span> <span class="mf">1.</span>
+                <span class="k">elif</span> <span class="n">n</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">m</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="n">h</span> <span class="o">-=</span> <span class="mf">1.</span>
+                <span class="k">elif</span> <span class="n">m</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">n</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="n">h</span> <span class="o">-=</span> <span class="mf">1.</span>
+
+                <span class="bp">self</span><span class="o">.</span><span class="n">matrix_mu</span><span class="p">[</span><span class="n">n</span><span class="p">,</span> <span class="n">m</span><span class="p">]</span> <span class="o">=</span> <span class="n">h</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">matrix_mu</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">matrix_mu</span><span class="o">*</span><span class="n">mean</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">matrix_var</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">identity</span><span class="p">(</span><span class="n">N</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">N</span><span class="p">):</span>
+
+            <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">N</span><span class="p">):</span>
+                <span class="n">h</span> <span class="o">=</span> <span class="mf">0.</span>
+                <span class="k">if</span> <span class="n">n</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">m</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="n">h</span> <span class="o">+=</span> <span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">N</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">N</span><span class="p">)</span>
+                <span class="k">elif</span> <span class="n">n</span> <span class="o">!=</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">m</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="n">h</span> <span class="o">+=</span> <span class="mf">1.</span>
+                <span class="k">elif</span> <span class="n">n</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">m</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="n">h</span> <span class="o">+=</span> <span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">N</span><span class="p">)</span>
+                <span class="k">elif</span> <span class="n">m</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">n</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="n">h</span> <span class="o">+=</span> <span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">N</span><span class="p">)</span>
+
+                <span class="bp">self</span><span class="o">.</span><span class="n">matrix_var</span><span class="p">[</span><span class="n">n</span><span class="p">,</span> <span class="n">m</span><span class="p">]</span> <span class="o">=</span> <span class="n">h</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">matrix_var</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">matrix_var</span><span class="o">*</span><span class="n">variance</span></div>
+
+    <span class="c1"># setup_random_fluctuations_multisink</span>
+<div class="viewcode-block" id="FlowRandom.set_effective_source_matrix"><a class="viewcode-back" href="../../hailhydro.html#hailhydro.flow_random.FlowRandom.set_effective_source_matrix">[docs]</a>    <span class="k">def</span> <span class="nf">set_effective_source_matrix</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">noise</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Set the effective fluctuation matrix with ggiven noise level.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            noise (float):\n</span>
+<span class="sd">                The ratio of squared mean and variance of sink strength.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">noise</span> <span class="o">=</span> <span class="n">noise</span>
+        <span class="n">num_n</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">circuit</span><span class="o">.</span><span class="n">list_graph_nodes</span><span class="p">)</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">circuit</span><span class="o">.</span><span class="n">nodes</span><span class="p">[</span><span class="s1">&#39;source&#39;</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="c1"># idx = np.where(self.circuit.nodes[&#39;source&#39;] &lt; 0)[0]</span>
+        <span class="c1"># N = len(idx)</span>
+        <span class="n">N</span> <span class="o">=</span> <span class="n">num_n</span> <span class="o">-</span> <span class="nb">len</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="n">M</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+
+        <span class="n">U</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">num_n</span><span class="p">,</span> <span class="n">num_n</span><span class="p">))</span>
+        <span class="n">V</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">num_n</span><span class="p">,</span> <span class="n">num_n</span><span class="p">))</span>
+
+        <span class="n">m_sq</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">M</span><span class="o">*</span><span class="n">M</span><span class="p">)</span>
+        <span class="n">NM</span> <span class="o">=</span> <span class="n">num_n</span><span class="o">*</span><span class="n">num_n</span><span class="o">/</span><span class="nb">float</span><span class="p">(</span><span class="n">m_sq</span><span class="p">)</span>
+        <span class="n">Nm</span> <span class="o">=</span> <span class="p">(</span><span class="n">N</span><span class="o">/</span><span class="n">m_sq</span><span class="p">)</span><span class="o">+</span><span class="mf">2.</span><span class="o">/</span><span class="n">M</span>
+
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_n</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_n</span><span class="p">)[</span><span class="n">i</span><span class="p">:]:</span>
+                <span class="n">delta</span> <span class="o">=</span> <span class="mf">0.</span>
+                <span class="n">sum_delta</span> <span class="o">=</span> <span class="mf">0.</span>
+                <span class="n">sum_delta_sq</span> <span class="o">=</span> <span class="mf">0.</span>
+
+                <span class="k">if</span> <span class="n">i</span> <span class="o">==</span> <span class="n">j</span><span class="p">:</span>
+                    <span class="n">delta</span> <span class="o">=</span> <span class="mf">1.</span>
+
+                <span class="k">if</span> <span class="p">(</span><span class="n">i</span> <span class="ow">in</span> <span class="n">x</span><span class="p">):</span>
+                    <span class="n">sum_delta</span> <span class="o">=</span> <span class="mf">1.</span>
+
+                <span class="k">if</span> <span class="p">(</span><span class="n">j</span> <span class="ow">in</span> <span class="n">x</span><span class="p">):</span>
+                    <span class="n">sum_delta</span> <span class="o">=</span> <span class="mf">1.</span>
+
+                <span class="k">if</span> <span class="p">(</span><span class="n">i</span> <span class="ow">in</span> <span class="n">x</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="n">j</span> <span class="ow">in</span> <span class="n">x</span><span class="p">):</span>
+                    <span class="n">sum_delta_sq</span> <span class="o">=</span> <span class="mf">1.</span>
+                    <span class="n">sum_delta</span> <span class="o">=</span> <span class="mf">2.</span>
+
+                <span class="n">U</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">m_sq</span> <span class="o">-</span> <span class="n">num_n</span><span class="o">*</span><span class="n">sum_delta</span> <span class="o">+</span> <span class="n">NM</span><span class="o">*</span><span class="n">sum_delta_sq</span><span class="p">)</span>
+
+                <span class="n">v1</span> <span class="o">=</span> <span class="p">(</span><span class="n">Nm</span> <span class="o">+</span> <span class="n">delta</span><span class="p">)</span><span class="o">*</span><span class="n">sum_delta_sq</span>
+                <span class="n">v2</span> <span class="o">=</span> <span class="p">(</span><span class="mf">1.</span><span class="o">+</span><span class="n">M</span><span class="o">*</span><span class="n">delta</span><span class="p">)</span><span class="o">*</span><span class="n">sum_delta</span>
+                <span class="n">v3</span> <span class="o">=</span> <span class="n">m_sq</span><span class="o">*</span><span class="n">delta</span>
+                <span class="n">V</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">v1</span> <span class="o">-</span> <span class="n">v2</span> <span class="o">+</span> <span class="n">v3</span><span class="p">)</span>
+
+                <span class="n">U</span><span class="p">[</span><span class="n">j</span><span class="p">,</span> <span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">U</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span>
+                <span class="n">V</span><span class="p">[</span><span class="n">j</span><span class="p">,</span> <span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">V</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">Z</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">U</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">multiply</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">noise</span><span class="p">,</span> <span class="n">V</span><span class="p">))</span></div>
+
+    <span class="c1"># calc_sq_flow</span>
+<div class="viewcode-block" id="FlowRandom.calc_sq_flow_effective"><a class="viewcode-back" href="../../hailhydro.html#hailhydro.flow_random.FlowRandom.calc_sq_flow_effective">[docs]</a>    <span class="k">def</span> <span class="nf">calc_sq_flow_effective</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">conduct</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Compute the squared pressure/flow landscape, considering the current</span>
+<span class="sd">        parameter and plexus condition (given the internal effective noise</span>
+<span class="sd">        matrix was initialized).</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            conduct (array):\n</span>
+<span class="sd">                The network&#39;s edge conductivity matrix.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            ndarray: Edge-vector of squared pressure difference values.</span>
+<span class="sd">            ndarray: Edge-vector of squared flow rate values.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">OP</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">B</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">diag</span><span class="p">(</span><span class="n">conduct</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">BT</span><span class="p">))</span>
+        <span class="n">inverse</span> <span class="o">=</span> <span class="n">lina</span><span class="o">.</span><span class="n">pinv</span><span class="p">(</span><span class="n">OP</span><span class="p">)</span>
+        <span class="n">D</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">BT</span><span class="p">,</span> <span class="n">inverse</span><span class="p">)</span>
+        <span class="n">DT</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="n">D</span><span class="p">)</span>
+
+        <span class="n">A</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">D</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">Z</span><span class="p">),</span> <span class="n">DT</span><span class="p">)</span>
+        <span class="n">dV_sq</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">diag</span><span class="p">(</span><span class="n">A</span><span class="p">)</span>
+        <span class="n">F_sq</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">multiply</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">multiply</span><span class="p">(</span><span class="n">conduct</span><span class="p">,</span> <span class="n">conduct</span><span class="p">),</span> <span class="n">dV_sq</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">dV_sq</span><span class="p">,</span> <span class="n">F_sq</span></div>
+
+    <span class="c1"># calc_sq_flow_random</span>
+<div class="viewcode-block" id="FlowRandom.calc_sq_flow_root"><a class="viewcode-back" href="../../hailhydro.html#hailhydro.flow_random.FlowRandom.calc_sq_flow_root">[docs]</a>    <span class="k">def</span> <span class="nf">calc_sq_flow_root</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">conduct</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Compute the squared pressure/flow landscape, considering the current</span>
+<span class="sd">        parameter and plexus condition (given the internal sink mean and</span>
+<span class="sd">        variance were initialized).</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            conduct (array):\n</span>
+<span class="sd">                The network&#39;s edge conductivity matrix.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            ndarray: Edge-vector of squared pressure difference values.</span>
+<span class="sd">            ndarray: Edge-vector of squared flow rate values.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">OP</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">B</span><span class="p">,</span> <span class="n">conduct</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">BT</span><span class="p">)</span>
+        <span class="n">inverse</span> <span class="o">=</span> <span class="n">lina</span><span class="o">.</span><span class="n">pinv</span><span class="p">(</span><span class="n">OP</span><span class="p">)</span>
+        <span class="n">D</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">BT</span><span class="p">,</span> <span class="n">inverse</span><span class="p">)</span>
+        <span class="n">DT</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="n">D</span><span class="p">)</span>
+
+        <span class="n">var_matrix</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">D</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">matrix_mu</span><span class="p">),</span> <span class="n">DT</span><span class="p">)</span>
+        <span class="n">mean_matrix</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">D</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">matrix_var</span><span class="p">),</span> <span class="n">DT</span><span class="p">)</span>
+
+        <span class="n">var_flow</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">diag</span><span class="p">(</span><span class="n">var_matrix</span><span class="p">)</span>
+        <span class="n">mean_flow</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">diag</span><span class="p">(</span><span class="n">mean_matrix</span><span class="p">)</span>
+
+        <span class="n">dV_sq</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">var_flow</span><span class="p">,</span> <span class="n">mean_flow</span><span class="p">)</span>
+        <span class="n">F_sq</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">multiply</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">multiply</span><span class="p">(</span><span class="n">conduct</span><span class="p">,</span> <span class="n">conduct</span><span class="p">),</span> <span class="n">dV_sq</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">dV_sq</span><span class="p">,</span> <span class="n">F_sq</span></div></div>
+
+
+<div class="viewcode-block" id="FlowReroute"><a class="viewcode-back" href="../../hailhydro.html#hailhydro.flow_random.FlowReroute">[docs]</a><span class="nd">@dataclass</span>
+<span class="k">class</span> <span class="nc">FlowReroute</span><span class="p">(</span><span class="n">Flow</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    The random flow class defines variables and methods for computing</span>
+<span class="sd">    randomized-averaged Hagen-Poiseuille flows on kirchhoff networks.</span>
+
+<span class="sd">    To be used in conjunction with &#39;kirchhoff&#39; and &#39;goflow&#39; in order to</span>
+<span class="sd">    simulate flow-driven network morphogenesis. The implementation is based on</span>
+<span class="sd">    the models which assume flow variation to emerge from random edge failure</span>
+<span class="sd">    (homogenous probability), e.g. see Katifori, PRL, 2010</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        constr (networkx.Graph):\n</span>
+<span class="sd">            A networkx graph or circuit to initilize a flow on.</span>
+<span class="sd">        pars_source (dict):\n</span>
+<span class="sd">            The boundary conditions (Neumann) determining the in/outlfow of</span>
+<span class="sd">            fluid accross the network.</span>
+<span class="sd">        pars_plexus (dict):\n</span>
+<span class="sd">            The initial plexus, edge values of  conductivity, the flow is to</span>
+<span class="sd">            be calculated on.</span>
+<span class="sd">        flow_setting (dict):\n</span>
+<span class="sd">            The setting for randomized flow, i.e. noise levels and</span>
+<span class="sd">            correlations.</span>
+
+<span class="sd">    Methods:</span>
+<span class="sd">        init_flow():\n</span>
+<span class="sd">            Initialize flow variables, boundaries and handle constructor</span>
+<span class="sd">            exceptions.</span>
+<span class="sd">        set_boundaries():\n</span>
+<span class="sd">            Explicitly set Neumann-boudaries and initial plexus as defined via</span>
+<span class="sd">            &#39;pars_source/plexus&#39; parameters. Set internal output varaibles and</span>
+<span class="sd">            incidence information.</span>
+<span class="sd">        find_roots(G):\n</span>
+<span class="sd">            Given a networkx graph, return all source-nodes (needs the nodal</span>
+<span class="sd">            &#39;source&#39; attribute set).</span>
+<span class="sd">        find_sinks(G):\n</span>
+<span class="sd">            Given a networkx graph, return all sink-nodes (needs the nodal</span>
+<span class="sd">            &#39;source&#39; attribute set).</span>
+<span class="sd">        alpha_omega(G, j):\n</span>
+<span class="sd">            Return the start (alpha) and end(omega) node of an edge, for any</span>
+<span class="sd">            given networkx graph with edge labeling j.</span>
+<span class="sd">        calc_pressure(conduct, source):\n</span>
+<span class="sd">            Compute the pressure landscape, considering the current parameter</span>
+<span class="sd">            and plexus condition.</span>
+<span class="sd">        calc_flow_from_pressure(conduct, dP):\n</span>
+<span class="sd">            Compute the flow landscape, considering the current parameter</span>
+<span class="sd">            and plexus condition.</span>
+<span class="sd">        calc_flow(conduct, source):\n</span>
+<span class="sd">            Compute the flow landscape, considering the current parameter</span>
+<span class="sd">            and plexus condition.</span>
+<span class="sd">        calc_sq_flow(sconduct, source):\n</span>
+<span class="sd">            Compute the squared pressure/flow landscape, considering the</span>
+<span class="sd">            current parameter and plexus condition.</span>
+<span class="sd">        calc_cross_section_from_conductivity(conductivity, conductance):\n</span>
+<span class="sd">            Compute the squared radii values from the current conductivity</span>
+<span class="sd">            matrix and conductance value.</span>
+<span class="sd">        calc_conductivity_from_cross_section(R_sq, conductance):\n</span>
+<span class="sd">            Compute the conductivity matrix from the current squared radii</span>
+<span class="sd">            values and conductance value.</span>
+<span class="sd">        calc_configuration_flow():\n</span>
+<span class="sd">            Compute the pressure/flow landscape, considering the current</span>
+<span class="sd">            parameter and plexus condition.</span>
+
+<span class="sd">        initialize_broken_link():\n</span>
+<span class="sd">            Initialize random-flow variables and boundaries, pre-generate broken</span>
+<span class="sd">            edge states for faster sampling.</span>
+
+<span class="sd">        generate_coherent_closure_deterministic(H, x):\n</span>
+<span class="sd">            Generate a pruned version of a plexus, where a number &#39;x&#39; of</span>
+<span class="sd">            randomly sampled edges are failing during each realizsation.</span>
+
+<span class="sd">        generate_coherent_closure():\n</span>
+<span class="sd">            Generate a pruned version of a plexus, where a random number of</span>
+<span class="sd">            edges are failing during each realizsation(each indivually with</span>
+<span class="sd">            probability p).</span>
+<span class="sd">        break_links(idx, conduct):\n</span>
+<span class="sd">            Break/Fail the edges in list &#39;idx&#39;, by setting the respective</span>
+<span class="sd">            conductivity values to numerically close to zero.</span>
+<span class="sd">        get_sets():\n</span>
+<span class="sd">            Sample a random set of network edges.</span>
+
+<span class="sd">        calc_random_radii(idx, conduct):\n</span>
+<span class="sd">            Compute the edge radii values, correpsonding to a randomly pruned</span>
+<span class="sd">            conductivity matrix.</span>
+<span class="sd">        calc_sq_flow(idx, conduct):\n</span>
+<span class="sd">            Compute the squared pressure/flow landscape, considering a</span>
+<span class="sd">            sequence of pruned conductivity matrices.</span>
+<span class="sd">        calc_flows_mapping(graph_matrices):\n</span>
+<span class="sd">            Compute the pressure/flow landscape, considering a sequence of</span>
+<span class="sd">            conductivity matrix realizations.</span>
+<span class="sd">        calc_sq_flow_avg(conduct):\n</span>
+<span class="sd">            Compute the average squared pressure/flow landscape, by internally</span>
+<span class="sd">            generating a random sequence of pruned conductivity matrix</span>
+<span class="sd">            realizations.</span>
+<span class="sd">        get_broken_links_asarray(idx, conduct):\n</span>
+<span class="sd">            Compute a sequence of pruned conductivity matrices based on the</span>
+<span class="sd">            failed edge sets &#39;idx&#39;.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">default</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="nb">repr</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">init</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="n">flow_setting</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="nb">dict</span><span class="p">,</span> <span class="o">**</span><span class="n">default</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__post_init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">init_flow</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">num_iteration</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">flow_setting</span><span class="p">[</span><span class="s1">&#39;num_iter&#39;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">percentage_broken</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">flow_setting</span><span class="p">[</span><span class="s1">&#39;p_broken&#39;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">initialize_broken_link</span><span class="p">()</span>
+
+<div class="viewcode-block" id="FlowReroute.initialize_broken_link"><a class="viewcode-back" href="../../hailhydro.html#hailhydro.flow_random.FlowReroute.initialize_broken_link">[docs]</a>    <span class="k">def</span> <span class="nf">initialize_broken_link</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Initialize random-flow variables and boundaries, pre-generate broken</span>
+<span class="sd">        edge states for faster sampling.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">broken_sets</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">num_sets</span> <span class="o">=</span> <span class="mi">50000</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">AUX</span> <span class="o">=</span> <span class="n">nx</span><span class="o">.</span><span class="n">Graph</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">circuit</span><span class="o">.</span><span class="n">G</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">num_sets</span><span class="p">):</span>
+            <span class="n">cond</span><span class="p">,</span> <span class="n">idx</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">generate_coherent_closure</span><span class="p">()</span>
+            <span class="k">if</span> <span class="n">cond</span><span class="p">:</span>
+                <span class="n">broken_sets</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">idx</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">broken_sets</span> <span class="o">=</span> <span class="n">broken_sets</span>
+
+        <span class="k">assert</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">broken_sets</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="FlowReroute.generate_coherent_closure_deterministic"><a class="viewcode-back" href="../../hailhydro.html#hailhydro.flow_random.FlowReroute.generate_coherent_closure_deterministic">[docs]</a>    <span class="k">def</span> <span class="nf">generate_coherent_closure_deterministic</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">H</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Generate a pruned version of a plexus, where a number &#39;x&#39; of</span>
+<span class="sd">        randomly sampled edges are failing during each realizsation.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            H (networkx.Graph):\n</span>
+<span class="sd">                A networkx graph.</span>
+<span class="sd">            x (int):\n</span>
+<span class="sd">                The pre-determined number of edge to fail.</span>
+<span class="sd">        Returns:</span>
+<span class="sd">            bool: Boolean on whether the pruned network is connected.</span>
+<span class="sd">            list: The list of failed edges.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">idx</span> <span class="o">=</span> <span class="n">rd</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">circuit</span><span class="o">.</span><span class="n">list_graph_edges</span><span class="p">)),</span> <span class="n">x</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="n">idx</span><span class="p">:</span>
+            <span class="n">H</span><span class="o">.</span><span class="n">remove_edge</span><span class="p">(</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">circuit</span><span class="o">.</span><span class="n">list_graph_edges</span><span class="p">[</span><span class="n">e</span><span class="p">])</span>
+        <span class="n">cond</span> <span class="o">=</span> <span class="n">nx</span><span class="o">.</span><span class="n">is_connected</span><span class="p">(</span><span class="n">H</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="n">idx</span><span class="p">:</span>
+            <span class="n">H</span><span class="o">.</span><span class="n">add_edge</span><span class="p">(</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">circuit</span><span class="o">.</span><span class="n">list_graph_edges</span><span class="p">[</span><span class="n">e</span><span class="p">])</span>
+
+        <span class="k">return</span> <span class="n">cond</span><span class="p">,</span> <span class="n">idx</span></div>
+
+<div class="viewcode-block" id="FlowReroute.generate_coherent_closure"><a class="viewcode-back" href="../../hailhydro.html#hailhydro.flow_random.FlowReroute.generate_coherent_closure">[docs]</a>    <span class="k">def</span> <span class="nf">generate_coherent_closure</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Generate a pruned version of a plexus, where a random number of</span>
+<span class="sd">        edges are failing during each realizsation(each indivually with</span>
+<span class="sd">        probability p).</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            bool: Boolean on whether the pruned network is connected.</span>
+<span class="sd">            list: The list of failed edges.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">prob</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">circuit</span><span class="o">.</span><span class="n">list_graph_edges</span><span class="p">))</span>
+        <span class="n">idx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">prob</span> <span class="o">&lt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">percentage_broken</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+
+        <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="n">idx</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">AUX</span><span class="o">.</span><span class="n">remove_edge</span><span class="p">(</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">circuit</span><span class="o">.</span><span class="n">list_graph_edges</span><span class="p">[</span><span class="n">e</span><span class="p">])</span>
+        <span class="n">cond</span> <span class="o">=</span> <span class="n">nx</span><span class="o">.</span><span class="n">is_connected</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">AUX</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="n">idx</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">AUX</span><span class="o">.</span><span class="n">add_edge</span><span class="p">(</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">circuit</span><span class="o">.</span><span class="n">list_graph_edges</span><span class="p">[</span><span class="n">e</span><span class="p">])</span>
+
+        <span class="k">return</span> <span class="n">cond</span><span class="p">,</span> <span class="n">idx</span></div>
+
+<div class="viewcode-block" id="FlowReroute.break_links"><a class="viewcode-back" href="../../hailhydro.html#hailhydro.flow_random.FlowReroute.break_links">[docs]</a>    <span class="k">def</span> <span class="nf">break_links</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">idx</span><span class="p">,</span> <span class="n">conduct</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Break/Fail the edges in list &#39;idx&#39;, by setting the respective</span>
+<span class="sd">        conductivity values to numerically close to zero.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            idx (list):\n</span>
+<span class="sd">                A list of edges to fail.</span>
+<span class="sd">            conduct (array):\n</span>
+<span class="sd">                The network&#39;s conductivity matrix.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            ndarray:\n</span>
+<span class="sd">                The network&#39;s pruned conductivity matrix.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">C_aux</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">conduct</span><span class="p">)</span>
+        <span class="n">C_aux</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">power</span><span class="p">(</span><span class="mf">10.</span><span class="p">,</span> <span class="o">-</span><span class="mi">20</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">C_aux</span></div>
+
+<div class="viewcode-block" id="FlowReroute.get_sets"><a class="viewcode-back" href="../../hailhydro.html#hailhydro.flow_random.FlowReroute.get_sets">[docs]</a>    <span class="k">def</span> <span class="nf">get_sets</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Sample a random set of network edges.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            list:\n</span>
+<span class="sd">                A list of randomly sampled edges.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">idx</span> <span class="o">=</span> <span class="n">rd</span><span class="o">.</span><span class="n">choices</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">broken_sets</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">num_iteration</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">idx</span></div>
+
+<div class="viewcode-block" id="FlowReroute.calc_random_radii"><a class="viewcode-back" href="../../hailhydro.html#hailhydro.flow_random.FlowReroute.calc_random_radii">[docs]</a>    <span class="k">def</span> <span class="nf">calc_random_radii</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">idx</span><span class="p">,</span> <span class="n">conduct</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Compute the edge radii values, correpsonding to a randomly pruned</span>
+<span class="sd">        conductivity matrix.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            idx (list):\n</span>
+<span class="sd">                The list of failed edges.</span>
+<span class="sd">            conduct (array):\n</span>
+<span class="sd">                The network&#39;s conductivity matrix.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            list:\n</span>
+<span class="sd">                A list of radii values R, as well as radii functions R^2, R^3</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">graph_matrices</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_broken_links_asarray</span><span class="p">(</span><span class="n">idx</span><span class="p">,</span> <span class="n">conduct</span><span class="p">)</span>
+
+        <span class="n">R</span><span class="p">,</span> <span class="n">R_sq</span><span class="p">,</span> <span class="n">R_cb</span> <span class="o">=</span> <span class="p">[],</span> <span class="p">[],</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">gm</span> <span class="ow">in</span> <span class="n">graph_matrices</span><span class="p">:</span>
+
+            <span class="n">kernel</span> <span class="o">=</span> <span class="n">gm</span><span class="o">/</span><span class="bp">self</span><span class="o">.</span><span class="n">circuit</span><span class="o">.</span><span class="n">scales</span><span class="p">[</span><span class="s1">&#39;conductance&#39;</span><span class="p">]</span>
+
+            <span class="n">R</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">power</span><span class="p">(</span><span class="n">kernel</span><span class="p">,</span> <span class="mf">0.25</span><span class="p">))</span>
+            <span class="n">R_sq</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">kernel</span><span class="p">))</span>
+            <span class="n">R_cb</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">power</span><span class="p">(</span><span class="n">kernel</span><span class="p">,</span> <span class="mf">0.75</span><span class="p">))</span>
+
+        <span class="k">return</span> <span class="p">[</span><span class="n">R</span><span class="p">,</span> <span class="n">R_sq</span><span class="p">,</span> <span class="n">R_cb</span><span class="p">]</span></div>
+
+<div class="viewcode-block" id="FlowReroute.calc_sq_flow"><a class="viewcode-back" href="../../hailhydro.html#hailhydro.flow_random.FlowReroute.calc_sq_flow">[docs]</a>    <span class="k">def</span> <span class="nf">calc_sq_flow</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">idx</span><span class="p">,</span> <span class="n">conduct</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Compute the squared pressure/flow landscape, considering a sequence of</span>
+<span class="sd">        pruned conductivity matrices.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            idx (list):\n</span>
+<span class="sd">                The list of failed edges.</span>
+<span class="sd">            conduct (array):\n</span>
+<span class="sd">                The network&#39;s conductivity matrix.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            ndarray: Edge-vector of squared pressure difference values.</span>
+<span class="sd">            ndarray: Edge-vector of squared flow rate values.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="c1"># block p percent of the edges per realization</span>
+        <span class="n">graph_matrices</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_broken_links_asarray</span><span class="p">(</span><span class="n">idx</span><span class="p">,</span> <span class="n">conduct</span><span class="p">)</span>
+        <span class="n">flow_observables</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">calc_flows_mapping</span><span class="p">,</span> <span class="n">graph_matrices</span><span class="p">))</span>
+
+        <span class="c1"># calc ensemble averages</span>
+        <span class="n">q_sq</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">power</span><span class="p">([</span><span class="n">fo</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">fo</span> <span class="ow">in</span> <span class="n">flow_observables</span><span class="p">],</span> <span class="mi">2</span><span class="p">)</span>
+        <span class="n">p_sq</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">power</span><span class="p">([</span><span class="n">fo</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="k">for</span> <span class="n">fo</span> <span class="ow">in</span> <span class="n">flow_observables</span><span class="p">],</span> <span class="mi">2</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">p_sq</span><span class="p">,</span> <span class="n">q_sq</span></div>
+
+<div class="viewcode-block" id="FlowReroute.calc_flows_mapping"><a class="viewcode-back" href="../../hailhydro.html#hailhydro.flow_random.FlowReroute.calc_flows_mapping">[docs]</a>    <span class="k">def</span> <span class="nf">calc_flows_mapping</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">graph_matrices</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Compute the pressure/flow landscape, considering a sequence of</span>
+<span class="sd">        conductivity matrix realizations.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            graph_matrices (iterable):\n</span>
+<span class="sd">                An iterable of conductivity matrix realizations.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            list: A list of edge/nodal-vectors of effective flow/pressure</span>
+<span class="sd">            landscape realizations.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">C_aux</span> <span class="o">=</span> <span class="n">graph_matrices</span>
+        <span class="n">dP</span><span class="p">,</span> <span class="n">P</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">calc_pressure</span><span class="p">(</span><span class="n">C_aux</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">circuit</span><span class="o">.</span><span class="n">nodes</span><span class="p">[</span><span class="s1">&#39;source&#39;</span><span class="p">])</span>
+        <span class="n">Q</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">calc_flow_from_pressure</span><span class="p">(</span><span class="n">C_aux</span><span class="p">,</span> <span class="n">dP</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="p">[</span><span class="n">Q</span><span class="p">,</span> <span class="n">P</span><span class="p">,</span> <span class="n">dP</span><span class="p">]</span></div>
+
+<div class="viewcode-block" id="FlowReroute.calc_sq_flow_avg"><a class="viewcode-back" href="../../hailhydro.html#hailhydro.flow_random.FlowReroute.calc_sq_flow_avg">[docs]</a>    <span class="k">def</span> <span class="nf">calc_sq_flow_avg</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">conduct</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Compute the average squared pressure/flow landscape, by internally</span>
+<span class="sd">        generating a random sequence of pruned conductivity matrix</span>
+<span class="sd">        realizations.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            conduct (array):\n</span>
+<span class="sd">                The network&#39;s conductivity matrix.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            list: A list of average, squared flows, pressures as well as the</span>
+<span class="sd">            average radii and dissipation values.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">idx</span> <span class="o">=</span> <span class="n">rd</span><span class="o">.</span><span class="n">choices</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">broken_sets</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">num_iteration</span><span class="p">)</span>
+
+        <span class="n">p_sq</span><span class="p">,</span> <span class="n">q_sq</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">calc_sq_flow</span><span class="p">(</span><span class="n">idx</span><span class="p">,</span> <span class="n">conduct</span><span class="p">)</span>
+        <span class="n">R</span><span class="p">,</span> <span class="n">R_sq</span><span class="p">,</span> <span class="n">R_cb</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">calc_random_radii</span><span class="p">(</span><span class="n">idx</span><span class="p">,</span> <span class="n">conduct</span><span class="p">)</span>
+
+        <span class="n">n</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">num_iteration</span><span class="p">)</span>
+        <span class="n">avg_diss</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">multiply</span><span class="p">(</span><span class="n">p_sq</span><span class="p">,</span> <span class="n">R_cb</span><span class="p">),</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span><span class="o">/</span><span class="n">n</span>
+        <span class="n">avg_R</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">R</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+        <span class="n">avg_dP_sq</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">p_sq</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+        <span class="n">avg_F_sq</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">q_sq</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="p">[</span><span class="n">avg_dP_sq</span><span class="p">,</span> <span class="n">avg_F_sq</span><span class="p">,</span> <span class="n">avg_R</span><span class="p">,</span> <span class="n">avg_diss</span><span class="p">]</span></div>
+
+<div class="viewcode-block" id="FlowReroute.get_broken_links_asarray"><a class="viewcode-back" href="../../hailhydro.html#hailhydro.flow_random.FlowReroute.get_broken_links_asarray">[docs]</a>    <span class="k">def</span> <span class="nf">get_broken_links_asarray</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">idx</span><span class="p">,</span> <span class="n">conduct</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Compute a sequence of pruned conductivity matrices based on the failed</span>
+<span class="sd">        edge sets &#39;idx&#39;.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            idx (list):\n</span>
+<span class="sd">                The list of failed edge sets.</span>
+<span class="sd">            conduct (array):\n</span>
+<span class="sd">                The network&#39;s conductivity matrix.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            list: A list of pruned conductivity matrices.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">graph_matrices</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">break_links</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">conduct</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">idx</span><span class="p">]</span>
+
+        <span class="k">return</span> <span class="n">graph_matrices</span></div></div>
+</pre></div>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">kirchhoff-hydro  documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../index.html" >Module code</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">hailhydro.flow_random</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2022, Felix Kramer.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 4.4.0.
+    </div>
+  </body>
+</html>
