@@ -1,3 +1,4 @@
 networkx==2.5
 numpy==1.19.1
 scipy==1.5.2
+kirchhoff==0.2.7

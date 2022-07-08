@@ -1,10 +1,9 @@
-# @Author:  Felix Kramer
-# @Date:   2021-06-03T11:02:57+02:00
-# @Email:  kramer@mpi-cbg.de
-# @Project: go-with-the-flow
-# @Last modified by:    Felix Kramer
-# @Last modified time: 2021-08-30T23:39:32+02:00
-# @License: MIT
+# @Author: Felix Kramer <kramer>
+# @Date:   08-03-2022
+# @Email:  felixuwekramer@proton.me
+# @Last modified by:   kramer
+# @Last modified time: 08-07-2022
+
 import numpy as np
 import networkx as nx
 from hailhydro.flow_init import Flow
@@ -53,13 +52,17 @@ class Flux(Flow):
 
             self.circuit = self.constr
 
-
         elif isinstance(self.constr, Circuit):
 
             self.circuit = FluxCircuit(self.constr.G)
 
         else:
-            raise Exception('Warning! Non-networkx type given for initialization, no internal circuit established.')
+            raise Exception(
+                '''
+                Warning! Non-networkx type given for initialization, no
+                internal circuit established.
+                '''
+            )
 
         self.set_boundaries()
         self.set_solute_boundaries()
@@ -122,7 +125,8 @@ class Flux(Flow):
             self.circuit.set_geom_landscape(**self.pars_geom)
 
             idx = np.where(self.circuit.nodes['solute'] > 0.)[0]
-            self.circuit.scales['sum_flux'] = np.sum(self.circuit.nodes['solute'][idx])
+            sol = self.circuit.nodes['solute'][idx]
+            self.circuit.scales['sum_flux'] = np.sum(sol)
 
     def calc_diff_flux(self, R_sq):
 

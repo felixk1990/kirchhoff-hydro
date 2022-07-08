@@ -1,14 +1,13 @@
-# @Author:  Felix Kramer
-# @Date:   2021-06-03T11:02:57+02:00
-# @Email:  kramer@mpi-cbg.de
-# @Project: go-with-the-flow
-# @Last modified by:    Felix Kramer
-# @Last modified time: 2021-08-30T23:39:30+02:00
-# @License: MIT
+# @Author: Felix Kramer <kramer>
+# @Date:   02-09-2021
+# @Email:  felixuwekramer@proton.me
+# @Last modified by:   kramer
+# @Last modified time: 08-07-2022
+
 import numpy as np
 from hailhydro.flow_random import FlowReroute
 from hailhydro.flux_overflow import Overflow
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 
 @dataclass

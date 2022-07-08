@@ -1,10 +1,10 @@
-# @Author:  Felix Kramer
-# @Date:   2021-06-03T11:02:33+02:00
-# @Email:  kramer@mpi-cbg.de
-# @Project: go-with-the-flow
-# @Last modified by:    Felix Kramer
-# @Last modified time: 2021-09-04T23:31:01+02:00
-# @License: MIT
+# @Author: Felix Kramer <kramer>
+# @Date:   08-03-2022
+# @Email:  felixuwekramer@proton.me
+# @Last modified by:   kramer
+# @Last modified time: 08-07-2022
+
+
 import numpy as np
 import networkx as nx
 from kirchhoff.circuit_init import Circuit
@@ -18,7 +18,6 @@ class Flow():
     constr: nx.Graph = field(repr=False, init=True)
     pars_source: dict = field(default_factory=dict, repr=False)
     pars_plexus: dict = field(default_factory=dict, repr=False)
-
 
     def __post_init__(self):
 
@@ -41,7 +40,12 @@ class Flow():
             self.circuit = FlowCircuit(self.constr.G)
 
         else:
-            raise Exception('Warning! Non-networkx type given for initialization, no internal circuit established.')
+            raise Exception(
+                '''
+                Warning! Non-networkx type given for initialization, no
+                internal circuit established.
+                '''
+                )
 
         self.set_boundaries()
 

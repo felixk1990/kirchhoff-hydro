@@ -1,14 +1,13 @@
-# @Author:  Felix Kramer
-# @Date:   2021-06-03T11:02:57+02:00
-# @Email:  kramer@mpi-cbg.de
-# @Project: go-with-the-flow
-# @Last modified by:    Felix Kramer
-# @Last modified time: 2021-08-30T23:38:31+02:00
-# @License: MIT
+# @Author: Felix Kramer <kramer>
+# @Date:   08-03-2022
+# @Email:  felixuwekramer@proton.me
+# @Last modified by:   kramer
+# @Last modified time: 08-07-2022
+
 import numpy as np
 import scipy.linalg as lina
 from hailhydro.flux_init import Flux
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 
 @dataclass

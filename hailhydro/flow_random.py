@@ -1,10 +1,8 @@
-# @Author:  Felix Kramer
-# @Date:   2021-06-03T11:02:33+02:00
-# @Email:  kramer@mpi-cbg.de
-# @Project: go-with-the-flow
-# @Last modified by:    Felix Kramer
-# @Last modified time: 2021-09-08T20:18:02+02:00
-# @License: MIT
+# @Author: Felix Kramer <kramer>
+# @Date:   08-03-2022
+# @Email:  felixuwekramer@proton.me
+# @Last modified by:   kramer
+# @Last modified time: 08-07-2022
 
 import numpy as np
 import scipy.linalg as lina
@@ -37,8 +35,12 @@ class FlowRandom(Flow):
                 self.mu_sq = self.flow_setting['mu_sq']
                 self.var = self.flow_setting['var']
                 self.set_multi_source_matrix(self.mu_sq, self.var)
-        except:
-            raise Exception('Warning flow landscape not set!')
+        except Exception:
+            raise Exception(
+                '''
+                Warning flow landscape not set!
+                '''
+                )
 
     # setup_random_fluctuations
     def set_root_source_matrix(self, mean, variance):
@@ -161,6 +163,7 @@ class FlowRandom(Flow):
         F_sq = np.multiply(np.multiply(conduct, conduct), dV_sq)
 
         return dV_sq, F_sq
+
 
 @dataclass
 class FlowReroute(Flow):
