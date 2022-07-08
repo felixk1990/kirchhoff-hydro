@@ -48,9 +48,11 @@ overflow=hro.initialize_overflow_on_circuit(circuit)
 ./notebook contains examples to play with in the form of jupyter notebooks
 [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/felixk1990/kirchhoff-hydro/HEAD)
 ##  Requirements
-``` pandas ```,``` networkx ```, ``` numpy ```,```plotly```, ```kirchhoff```
-
-##  Gallery
-
+``` 
+networkx==2.5
+numpy==1.19.1
+scipy==1.5.2
+kirchhoff==0.2.7
+```
 ## Acknowledgement
 ```hailhydro``` written by Felix Kramer
